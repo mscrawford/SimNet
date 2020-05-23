@@ -1,0 +1,479 @@
+---
+title: "Understanding patterns of species abundance and persistence in TROLL"
+output: 
+    html_document:
+        toc: true
+        toc_float: true
+        number_section: true
+        highlight: zenburn
+knit: (function(inputFile, encoding) 
+        {
+          rmarkdown::render(inputFile, encoding = encoding, output_dir = "markdowns") 
+        }
+      )
+---
+
+```{r setup, include=FALSE}
+
+options(width = 1000)
+
+knitr::opts_chunk$set(echo = TRUE,
+                      warning = FALSE,
+                      message = FALSE,
+                      fig.height = 8,
+                      fig.width = 12) 
+
+library(data.table)
+library(tidyverse)
+library(ggthemes)
+library(viridis) 
+library(cowplot)
+library(scales)
+library(plotly)
+library(randomForest)
+
+set.seed(1)
+
+```
+
+```{r load-data, echo=FALSE, message=FALSE, warning=FALSE}
+
+setwd("/Users/Theodore/Documents/Dropbox/Work/Projects/SimNet/Modelling_Experiment/data")
+
+troll <- fread("TROLL_Table1.txt") %>%
+    select(-LineNumber, -Productivity) %>%
+    mutate(SpeciesID = as.factor(SpeciesID),
+           SpeciesID = as.numeric(SpeciesID))
+
+troll_traits <- fread("TROLL_Table2.txt") %>%
+    rename(SpeciesID = species_binomial) %>%
+    mutate(SpeciesID = as.factor(SpeciesID),
+           SpeciesID = as.numeric(SpeciesID))
+
+troll <- troll %>%
+    mutate(Model = as.character(Model),
+           Ninitial = as.factor(Ninitial),
+           Rep = as.numeric(Rep),
+           SeedRain = as.factor(SeedRain),
+           SpeciesID = as.character(SpeciesID),
+           Stage = as.factor(Stage),
+           Year = as.numeric(Year),
+           Biomass = as.numeric(Biomass))
+
+troll <- troll %>%
+    mutate(Stage = recode(Stage,
+                          assembly = "metacommunity",
+                          disassembly = "isolation"))
+
+troll <- troll %>%
+    filter(SeedRain %in% c(100))
+
+troll <- troll %>%
+    ungroup() %>% # There shouldn't be groups anyways
+    mutate(Biomass = scales::rescale(Biomass,
+                                     to = c(0, 100)))
+
+troll <- troll %>%
+    select(-Model, -SeedRain) %>%
+    mutate(SpeciesID = as.factor(SpeciesID))
+
+troll_traits <- troll_traits %>%
+    mutate(SpeciesID = as.factor(SpeciesID))
+
+troll <- inner_join(troll, troll_traits, by = c("SpeciesID"))
+
+troll <- troll %>%
+    mutate(h_realmax = hmax * dmax / (dmax + ah)) %>%
+    select(-hmax, -ah)
+
+```
+
+In this document, I examine how a species' performance in mixture depends on 1) its monoculture biomass
+and 2) its trait values. To measure performance in mixture, I use two indices: 1) total biomass and 2)
+time to extinction.
+
+# How trait values translate into monoculture biomass
+
+First, a facetted plot of the relationship between each species' trait values and its corresponding
+monoculture biomass. 
+
+```{r monoculture-biomass-vs-traits, echo=FALSE, warning=FALSE, message=FALSE}
+
+troll.monocultures <- troll %>%
+    filter(Ninitial == 1,
+           Year %in% c(100, 200)) %>%
+    rename(monoculture.biomass = Biomass) %>%
+    select(-Ninitial, -Year, -Rep) %>%
+    pivot_longer(c(-SpeciesID, -Stage, -monoculture.biomass),
+                 names_to = "trait", 
+                 values_to = "trait.value")
+
+troll.monocultures <- troll.monocultures %>%
+    group_by(trait) %>%
+    nest() %>%
+    mutate(plot = map2(.x = data,
+                       .y = trait,
+                       .f = ~ {
+                           ggplot(.x) +
+                               geom_point(aes(x = trait.value,
+                                              y = monoculture.biomass,
+                                              color = SpeciesID),
+                                          size = 3,
+                                          show.legend = FALSE) +
+                               facet_grid(cols = vars(Stage)) +
+                               labs(x = "Trait value",
+                                    y = "Monoculture biomass",
+                                    title = .y) +
+                               theme_bw()
+                       }))
+
+plot_grid(plotlist = troll.monocultures$plot,
+          ncol = 2)
+
+```
+
+Color indicates SpeciesID. From visual inspection, it appears that `dmax` and `h_realmax` are the most important traits 
+determining monoculture biomass.
+
+Because I'm going to be plotting the species' traits in relation to each other and their species' emergent biomass,
+I need to pick which traits are the most important. Therefore, I use a random forest to find the importance for 
+each of the traits in predicting monoculture biomass. Note that, to increase the amount of data for the random forest,
+I use the last 20 years of the simulation as input data for the random forest, adding `Year` as a predictor 
+to ensure that temporal autocorrelation does not bias the variable importance measures (see
+[here](https://www.researchgate.net/post/Does_random_forest_account_for_temporal_auto-correlation)).
+
+```{r monoculture-biomass-vs-traits-randomForest-varImp, echo=TRUE, warning=FALSE, message=FALSE}
+
+troll.monocultures <- troll %>%
+    filter(Ninitial == 1,
+           Year %in% seq(180, 200)) %>%
+    rename(monoculture.biomass = Biomass) %>%
+    mutate(id = row_number()) %>%
+    mutate_if(is.character, as.factor) %>%
+    select(-SpeciesID, -Ninitial, -Stage, -Rep) 
+
+train <- troll.monocultures %>% sample_frac(.70)
+test <- anti_join(troll.monocultures, train, by = 'id')
+
+train <- train %>% select(-id)
+test <- test %>% select(-id)
+
+rf <- randomForest(data = as.data.frame(train), 
+                   ntree = 1000, 
+                   mtry = 3,
+                   monoculture.biomass ~ ., 
+                   importance = TRUE)
+
+pred <- data.frame(pred = predict(rf, test))
+title = paste("correlation: ", round(cor(pred, test$monoculture.biomass)[[1]], 2),
+              "  |  mean squared error: ", round(mean(rf$mse), 2),
+              "  |  R-squared: ", round(mean(rf$rsq), 2),
+              sep = "")
+
+varImpPlot(rf, main = title)
+
+```
+
+Strangely, incorporating `h_realmax`, rather than its components `ah` and `hmax` leads to the the year becoming
+an important contributing variable (in general, one should pay more attention to `%IncMSE` than `IncNodePurity`). This
+was not the case in my previous document. To get a handle on it, I'm going to first plot the species biomasses over
+time.
+
+```{r monoculture-biomass-over-time, echo=TRUE, warning=FALSE, message=FALSE}
+
+monocultures <- troll %>%
+    filter(Ninitial == 1,
+           Year %in% seq(180, 200)) %>%
+    rename(monoculture.biomass = Biomass) %>%
+    select(-Ninitial, -Stage, -Rep) 
+
+ggplot(monocultures) +
+    geom_line(aes(x = Year,
+                  y = monoculture.biomass,
+                  color = as.factor(SpeciesID)),
+              show.legend = FALSE) +
+    labs(y = "Monoculture biomass") +
+    theme_bw() +
+    theme(aspect.ratio = 1)
+
+```
+
+So, there is definitely still one species that's growing until the 200th timestep. I wonder if 
+the reason for the original random forest's confusion is that the composite variable `h_realmax` is more 
+unique to a single species than the other three variables its composed of were. Therefore, the fact that
+this one species is still growing becomes signal rather than noise. I think that this is especially the case
+because `dmax`, which was once the most predictive variable, is now included in the dataset twice: 
+Once by itself, and again as a component in `h_realmax`.
+
+Given that `Year` is now an important predictor, I'm going to run the randomForest again except only
+for the terminal year.
+
+```{r monoculture-biomass-vs-traits-randomForest-varImp-Again, echo=TRUE, warning=FALSE, message=FALSE}
+
+troll.monocultures <- troll %>%
+    filter(Ninitial == 1,
+           Year == 200) %>%
+    rename(monoculture.biomass = Biomass) %>%
+    mutate(id = row_number()) %>%
+    mutate_if(is.character, as.factor) %>%
+    select(-SpeciesID, -Ninitial, -Stage, -Rep) 
+
+train <- troll.monocultures %>% sample_frac(.70)
+test <- anti_join(troll.monocultures, train, by = 'id')
+
+train <- train %>% select(-id)
+test <- test %>% select(-id)
+
+rf <- randomForest(data = as.data.frame(train),
+                   ntree = 1000,
+                   mtry = 3,
+                   monoculture.biomass ~ .,
+                   importance = TRUE)
+
+pred <- data.frame(pred = predict(rf, test))
+title = paste("correlation: ", round(cor(pred, test$monoculture.biomass)[[1]], 2),
+              "  |  mean squared error: ", round(mean(rf$mse), 2),
+              "  |  R-squared: ", round(mean(rf$rsq), 2),
+              sep = "")
+
+varImpPlot(rf, main = title)
+
+```
+
+The correlation is less, as is the R-squared, but we're getting a better idea of what's actually important
+in terms of traits. Therefore, the new plots will use `h_realmax` and `dmax` as their focal traits.
+
+I want to note that this is not necessarily good practice: The training dataset has only 45 data points in it, 
+which is far too few for a random forest. I can spend some more time figuring out how to do this better, but as a 
+first pass it confirms my intuition so I'll leave it. You can tell me if you want something more robust.
+
+```{r monoculture-biomass-vs-traits-specific, echo=TRUE, warning=FALSE, message=FALSE}
+
+troll.monocultures <- troll %>%
+    filter(Ninitial == 1,
+           Year %in% c(100, 200)) %>%
+    select(-Ninitial, -Year, -Rep)
+
+ggplot(troll.monocultures) +
+    geom_point(aes(x = dmax, 
+                   y = h_realmax,
+                   color = Biomass),
+               size = 4) +
+    facet_grid(cols = vars(Stage)) +
+    scale_color_viridis() +
+    labs(color = "Monoculture\nbiomass") +
+    theme_bw()
+
+```  
+
+****************************************************************************************************
+
+# Competitive ability in mixture vs. monoculture biomass
+
+I now explore how the competitiveness of a species in a community (either 32- or, later, 64-species)
+depends on 1) its monoculture biomass, and subsequently 2) its trait values.
+
+## 32-species mixtures
+
+### Species' biomass in 32-species mixture vs. its biomass in monoculture
+
+```{r 32-species-biomass-vs-monoculture-biomass, echo=TRUE, warning=FALSE, message=FALSE}
+
+troll.monocultures <- troll %>%
+    filter(Ninitial == 1,
+           Year %in% c(100, 200)) %>%
+    rename(monoculture.biomass = Biomass) %>%
+    select(-Ninitial, -Year, -Rep) 
+
+troll.32 <- troll %>%
+    filter(Ninitial == 32,
+           Year %in% c(100, 200)) %>%
+    select(SpeciesID, Stage, Biomass, dmax, wsg, lma, pmass, nmass, h_realmax)
+
+troll.combined <- inner_join(troll.monocultures, troll.32)
+
+ggplot(troll.combined) +
+    geom_point(aes(x = monoculture.biomass,
+                   y = Biomass,
+                   color = SpeciesID)) +
+    facet_grid(cols = vars(Stage)) +
+    labs(x = "Monoculture biomass",
+         y = "Biomass in 32-species mixture") +
+    theme_bw() + 
+    theme(legend.position = "none")
+
+```
+
+Each color represents a species, while the number of discrete points per species depends on
+the number of replicates the species was included in. Inspecting this relationship visually, it appears 
+that species with low biomass monocultures stand a better chance to dominate 32-species mixtures. 
+However, many relatively high biomass monocultures remain in the community.
+
+### Biomass in 32-species mixture vs. trait values
+
+To understand this relationship more deeply, I inspect how species' traits impact their performance 
+in 32-species mixtures.
+
+```{r 32-species-biomass-vs-traits, echo=TRUE, warning=FALSE, message=FALSE}
+
+troll.32 <- troll %>%
+    filter(Ninitial == 32,
+           Year %in% c(100, 200)) %>%
+    select(Stage, SpeciesID, Biomass, dmax, wsg, lma, pmass, nmass, h_realmax)
+
+troll.32 <- troll.32 %>%
+    pivot_longer(c(-Stage, -SpeciesID, -Biomass),
+                 names_to = "trait",
+                 values_to = "trait.value")
+
+troll.32 <- troll.32 %>%
+    group_by(trait) %>%
+    nest() %>%
+    mutate(plot = map2(.x = data,
+                       .y = trait,
+                       .f = ~ {
+                           ggplot(.x) +
+                               geom_point(aes(x = trait.value,
+                                              y = Biomass,
+                                              color = SpeciesID),
+                                          size = 1,
+                                          show.legend = FALSE) +
+                               facet_grid(cols = vars(Stage)) +
+                               labs(x = "Trait value",
+                                    y = "Monoculture biomass",
+                                    title = .y) +
+                               theme_bw()
+                       }))
+
+plot_grid(plotlist = troll.32$plot,
+          ncol = 2)
+```
+
+It is difficult to discern which trait is the most important predictor of total biomass within the
+32-species mixtures. Therefore, I again employ a randomForest to find the traits' importances.
+
+To increase the data available to the random forest, I again use the last 20 years of the dataset 
+to generate the random forest model, incorporating `Year` as a predictor to ensure that temporal 
+autocorrelation plays a minimal role in biasing the results.
+
+```{r 32-species-biomass-vs-traits-randomForest-varImp-isolation, echo=TRUE, warning=FALSE, message=FALSE}
+
+troll.32 <- troll %>%
+    filter(Ninitial == 32,
+           Year %in% seq(180, 200))
+
+troll.32 <- troll.32 %>%
+    ungroup() %>%
+    mutate(id = row_number()) %>%
+    mutate_if(is.character, as.factor) %>%
+    select(-Ninitial, -Rep, -Stage, -SpeciesID) 
+
+train <- troll.32 %>% sample_frac(.70)
+test <- anti_join(troll.32, train, by = 'id')
+
+train <- train %>% select(-id)
+test <- test %>% select(-id)
+
+rf <- randomForest(data = as.data.frame(train),
+                   Biomass ~ .,
+                   importance = TRUE)
+
+pred <- data.frame(pred = predict(rf, test))
+
+title = paste("correlation: ", round(cor(pred, test$Biomass)[[1]], 2),
+              "  |  mean squared error: ", round(mean(rf$mse), 2),
+              "  |  R-squared: ", round(mean(rf$rsq), 2),
+              sep = "")
+
+varImpPlot(rf, main = title)
+
+``` 
+
+`lma` is the best predictor of total biomass in mixture, though all traits
+play an important roll in determining a species' biomass within a community. `Year` is a poor predictor 
+of species' biomass in monoculture, indicating that sampling the last 20 years doesn't skew the importance values.
+
+```{r 32-species-biomass-vs-traits-3D-metacommunity-isolation, echo=TRUE, warning=FALSE, message=FALSE}
+
+troll.32 <- troll %>%
+    filter(Ninitial == 32,
+           Year == 200) %>%
+    group_by(SpeciesID, dmax, wsg, lma, pmass, nmass, h_realmax) %>%
+    summarise(Biomass = mean(Biomass)) %>%
+    filter(Biomass > 0)
+
+plot_ly(troll.32,
+        x = ~wsg, 
+        y = ~pmass,
+        z = ~lma,
+        color = ~log(Biomass),
+        mode = "markers",
+        type = "scatter3d")
+
+```
+
+This randomForest was purely for the isolation stage, so I'm including one below that belongs to the
+metacommunity stage. From our experience so far, I would expect that the traits important for competitiveness
+during the metacommunity stage are different from those during the isolation stage.
+
+```{r 32-species-biomass-vs-traits-randomForest-varImp-metacommunity, echo=TRUE, warning=FALSE, message=FALSE}
+
+troll.32 <- troll %>%
+    filter(Ninitial == 32,
+           Year %in% seq(80, 100))
+
+troll.32 <- troll.32 %>%
+    ungroup() %>%
+    mutate(id = row_number()) %>%
+    mutate_if(is.character, as.factor) %>%
+    select(-Ninitial, -Rep, -Stage, -SpeciesID) 
+
+train <- troll.32 %>% sample_frac(.70)
+test <- anti_join(troll.32, train, by = 'id')
+
+train <- train %>% select(-id)
+test <- test %>% select(-id)
+
+rf <- randomForest(data = as.data.frame(train),
+                   Biomass ~ .,
+                   importance = TRUE)
+
+pred <- data.frame(pred = predict(rf, test))
+
+title = paste("correlation: ", round(cor(pred, test$Biomass)[[1]], 2),
+              "  |  mean squared error: ", round(mean(rf$mse), 2),
+              "  |  R-squared: ", round(mean(rf$rsq), 2),
+              sep = "")
+
+varImpPlot(rf, main = title)
+
+``` 
+
+The central difference, it seems, is that `h_realmax` and `dmax` are significantly more important to predicting
+the total biomass in mixture during the metacommunity stage, than during the isolation phase. I would conjecture that
+this is because those two traits are very important in determining monoculture biomass, which is in turn used to 
+calculate seed addition. **This makes me wonder, Isabelle, when you implemented the SimNet protocol into TROLL, 
+did you have the amount of seed addition (i.e. kg/species of seeds) be equal to the average seed addition across all
+monocultures, or across their own individual monocultures?** This would better explain, perhaps, why the higher 
+`h_realmax` and `dmax` species seem to benefit more seed addition than the others. But maybe this is true even without 
+any mistakes in the implementation, because species with higher wood density are hearty but slow growing, so
+the seed addition is more beneficial to them?
+
+```{r 32-species-biomass-vs-traits-3D-metacommunity, echo=TRUE, warning=FALSE, message=FALSE}
+
+troll.32 <- troll %>%
+    filter(Ninitial == 32,
+           Year == 100) %>%
+    group_by(SpeciesID, dmax, wsg, lma, pmass, nmass, h_realmax) %>%
+    summarise(Biomass = mean(Biomass)) %>%
+    filter(Biomass > 0)
+
+plot_ly(troll.32,
+        x = ~h_realmax, 
+        y = ~dmax,
+        z = ~lma,
+        color = ~log(Biomass),
+        mode = "markers",
+        type = "scatter3d")
+
+```

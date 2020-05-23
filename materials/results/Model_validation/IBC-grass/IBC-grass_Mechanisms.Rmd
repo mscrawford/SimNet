@@ -1,0 +1,329 @@
+---
+title: "Understanding patterns of species abundance and persistence in IBC-grass"
+output: 
+    html_document:
+        toc: true
+        toc_float: true
+        number_section: true
+        highlight: zenburn
+knit: (function(inputFile, encoding) 
+        {
+          rmarkdown::render(inputFile, encoding = encoding, output_dir = "markdowns") 
+        }
+      )
+---
+
+```{r setup, include=FALSE}
+
+options(width = 1000)
+
+knitr::opts_chunk$set(echo = TRUE,
+                      warning = FALSE,
+                      message = FALSE,
+                      fig.height = 4,
+                      fig.width = 8,
+                      size = "small") 
+
+library(data.table)
+library(tidyverse)
+library(ggthemes)
+library(viridis) 
+library(cowplot)
+library(scales)
+library(plotly)
+library(randomForest)
+library(pdp)
+
+filterYears <- FALSE
+
+setwd("/Users/Theodore/Documents/Dropbox/Work/Projects/SimNet/Modelling_Experiment/scripts")
+source("./SimNet_ReadModels.R")
+setwd("../tmp")
+
+IBC_grass <- models[["IBC_grass.NDD"]] %>%
+    select(Rep, Ninitial, SpeciesID, Year, Stage, Biomass, LMR, MaxMass, Gmax, SLA, meanSpacerLength)
+
+
+```
+
+# Monoculture biomass vs. traits
+
+```{r biomass-in-monoculture-facets}
+
+IBC_grass.monocultures <- IBC_grass %>%
+    filter(Ninitial == 1,
+           Year == 200) %>%
+    rename(monoculture.biomass = Biomass) %>%
+    select(-Ninitial, -Stage, -Year, -Rep) %>%
+    pivot_longer(c(-SpeciesID, -monoculture.biomass),
+                 names_to = "trait", 
+                 values_to = "trait.value")
+
+ggplot(IBC_grass.monocultures) +
+    geom_boxplot(aes(x = as.factor(trait.value),
+                     y = monoculture.biomass)) +
+    facet_wrap(facets = vars(trait),
+               ncol = 4,
+               scales = "free_x") +
+    labs(x = "Trait value",
+         y = "Monoculture biomass") +
+    theme_bw()
+
+```
+
+```{r monoculture-biomass-vs-traits-randomForest-varImp}
+
+IBC_grass.monocultures <- IBC_grass %>%
+    filter(Ninitial == 1,
+           Year %in% seq(180, 200)) %>%
+    rename(monoculture.biomass = Biomass) %>%
+    mutate(id = row_number()) %>%
+    mutate_if(is.character, as.factor) %>%
+    select(-SpeciesID, -Ninitial, -Stage, -Rep) 
+
+train <- IBC_grass.monocultures %>% sample_frac(.70)
+test <- anti_join(IBC_grass.monocultures, train, by = 'id')
+
+train <- train %>% select(-id)
+test <- test %>% select(-id)
+
+rf <- randomForest(data = as.data.frame(train),
+                   monoculture.biomass ~ .,
+                   importance = TRUE)
+
+pred <- data.frame(pred = predict(rf, test))
+title = paste("correlation: ", round(cor(pred, test$monoculture.biomass)[[1]], 2),
+              "  |  mean squared error: ", round(mean(rf$mse), 2),
+              "  |  R-squared: ", round(mean(rf$rsq), 2),
+              sep = "")
+
+varImpPlot(rf, main = title)
+
+```
+
+```{r monoculture-biomass-vs-traits-randomForest-pdp}
+
+pd <- pdp::partial(rf, pred.var = c("Gmax", "MaxMass", "SLA"))
+
+ggplot(pd) +
+    geom_tile(aes(x = Gmax,
+                  y = MaxMass,
+                  fill = yhat)) +
+    facet_grid(cols = vars(SLA), 
+               labeller = "label_both") +
+    scale_fill_viridis_c() +
+    labs(fill = "Predicted\nbiomass") +
+    theme_bw()
+
+
+```
+
+ 
+```{r 32-species-biomass-vs-monoculture-biomass}
+
+IBC_grass.monocultures <- IBC_grass %>%
+    filter(Ninitial == 1,
+           Year == 200) %>%
+    rename(monoculture.biomass = Biomass) %>%
+    select(-Ninitial, -Stage, -Year, -Rep) 
+
+IBC_grass.32 <- IBC_grass %>%
+    filter(Ninitial == 32,
+           Year == 200) %>%
+    select(SpeciesID, Biomass)
+
+IBC_grass.combined <- inner_join(IBC_grass.monocultures, IBC_grass.32)
+
+ggplot(IBC_grass.combined) +
+    geom_point(aes(x = monoculture.biomass,
+                   y = Biomass,
+                   color = SpeciesID)) +
+    labs(x = "Monoculture biomass",
+         y = "Biomass in 32-species mixture") +
+    theme_bw() + 
+    theme(legend.position = "none"); p
+
+```
+
+```{r 32-species-biomass-vs-traits-randomForest-varImp}
+
+IBC_grass.32 <- IBC_grass %>%
+    filter(Ninitial == 32,
+           Year %in% seq(180, 200))
+
+IBC_grass.32 <- IBC_grass.32 %>%
+    ungroup() %>%
+    mutate(id = row_number()) %>%
+    mutate_if(is.character, as.factor) %>%
+    select(-Ninitial, -Rep, -Stage, -SpeciesID) 
+
+train <- IBC_grass.32 %>% sample_frac(.70)
+test <- anti_join(IBC_grass.32, train, by = 'id')
+
+train <- train %>% select(-id)
+test <- test %>% select(-id)
+
+rf <- randomForest(data = as.data.frame(train),
+                   Biomass ~ .,
+                   importance = TRUE)
+
+pred <- data.frame(pred = predict(rf, test))
+
+title = paste("correlation: ", round(cor(pred, test$Biomass)[[1]], 2),
+              "  |  mean squared error: ", round(mean(rf$mse), 2),
+              "  |  R-squared: ", round(mean(rf$rsq), 2),
+              sep = "")
+
+varImpPlot(rf, main = title)
+
+``` 
+
+
+```{r 32-species-biomass-vs-traits-randomForest-varImp}
+
+pd <- pdp::partial(rf, pred.var = c("Gmax", "MaxMass", "meanSpacerLength"))
+
+ggplot(pd) +
+    geom_tile(aes(x = Gmax,
+                  y = MaxMass,
+                  fill = yhat)) +
+    facet_grid(cols = vars(meanSpacerLength), 
+               labeller = "label_both") +
+    scale_fill_viridis_c() +
+    labs(fill = "Predicted\nbiomass") +
+    theme_bw()
+
+```
+
+```{r 32-species-TTE-vs-monocuture-biomass}
+
+IBC_grass.monocultures <- IBC_grass %>%
+    filter(Ninitial == 1,
+           Year == 200) %>%
+    rename(monoculture.biomass = Biomass) %>%
+    select(-Ninitial, -Stage, -Year, -Rep) 
+
+IBC_grass.32 <- IBC_grass %>%
+    filter(Ninitial == 32)
+
+IBC_grass.32 <- IBC_grass.32 %>%
+    group_by(SpeciesID, Rep) %>%
+    arrange(Year) %>%
+    mutate(isDead = (Biomass == 0)) %>%
+    filter(isDead | (!isDead & Year == max(Year))) %>%
+    filter(Year == first(Year))
+
+IBC_grass.combined <- inner_join(IBC_grass.monocultures, IBC_grass.32)
+
+ggplot(IBC_grass.combined) +
+    geom_point(aes(x = monoculture.biomass,
+                   y = Year,
+                   color = SpeciesID)) +
+    labs(x = "Monoculture biomass",
+         y = "Extinction year") +
+    theme_bw() +
+    theme(legend.position = "none")
+
+```
+
+```{r 32-species-TTE-vs-traits-randomForest}
+
+IBC_grass.32 <- IBC_grass %>%
+    filter(Ninitial == 32)
+
+IBC_grass.32 <- IBC_grass.32 %>%
+    group_by(SpeciesID, Rep) %>%
+    arrange(Year) %>%
+    mutate(isDead = (Biomass == 0)) %>%
+    filter(isDead | (!isDead & Year == max(Year))) %>%
+    filter(Year == first(Year)) %>%
+    rename(extinction.year = Year)
+
+IBC_grass.32 <- IBC_grass.32 %>%
+    ungroup() %>%
+    mutate(id = row_number()) %>%
+    mutate_if(is.character, as.factor) %>%
+    select(-SpeciesID, -Ninitial, -Stage, -Rep, -Biomass, -isDead) 
+
+train <- IBC_grass.32 %>% sample_frac(.70)
+test <- anti_join(IBC_grass.32, train, by = 'id')
+
+train <- train %>% select(-id)
+test <- test %>% select(-id)
+
+rf <- randomForest(data = as.data.frame(train),
+                   extinction.year ~ .,
+                   importance = TRUE)
+
+pred <- data.frame(pred = predict(rf, test))
+
+title = paste("correlation: ", round(cor(pred, test$extinction.year)[[1]], 2),
+              "  |  mean squared error: ", round(mean(rf$mse), 2),
+              "  |  R-squared: ", round(mean(rf$rsq), 2),
+              sep = "")
+
+varImpPlot(rf, main = title)
+
+``` 
+
+
+```{r 64-species-biomass-vs-monoculture-biomass, echo=TRUE, warning=FALSE, message=FALSE}
+
+IBC_grass.monocultures <- IBC_grass %>%
+    filter(Ninitial == 1,
+           Year %in% c(100, 200)) %>%
+    rename(monoculture.biomass = Biomass) %>%
+    select(-Ninitial, -Year, -Rep) 
+    
+IBC_grass.mixture <- IBC_grass %>%
+    filter(Ninitial == 64,
+           Year %in% c(100, 200)) %>%
+    rename(mixture.biomass = Biomass) %>%
+    select(-Ninitial, -Year, -Rep) 
+
+IBC_grass.combined <- inner_join(IBC_grass.monocultures, IBC_grass.mixture)
+
+ggplot(IBC_grass.combined) +
+    geom_point(aes(x = monoculture.biomass,
+                   y = mixture.biomass,
+                   color = SpeciesID)) +
+    facet_grid(cols = vars(Stage)) +
+    labs(x = "Monoculture biomass",
+         y = "Mixture biomass") + 
+    theme_bw() +
+    theme(legend.position = "none")
+
+```
+
+
+```{r 64-species-TTE-vs-monoculture-biomass, echo=TRUE, warning=FALSE, message=FALSE}
+
+IBC_grass.monocultures <- IBC_grass %>%
+    filter(Ninitial == 1,
+           Year == 200) %>%
+    rename(monoculture.biomass = Biomass) %>%
+    select(-Ninitial, -Year, -Rep) 
+    
+IBC_grass.64 <- IBC_grass %>%
+    filter(Ninitial == 64) %>%
+    select(-Ninitial, -Rep)
+
+IBC_grass.64 <- IBC_grass.64 %>%
+    group_by(SpeciesID) %>%
+    arrange(Year) %>%
+    mutate(isDead = (Biomass == 0)) %>%
+    filter(isDead | (!isDead & Year == max(Year))) %>%
+    filter(Year == first(Year))
+    
+IBC_grass.combined <- inner_join(IBC_grass.monocultures, IBC_grass.64)
+
+ggplot(IBC_grass.combined) +
+    geom_point(aes(x = monoculture.biomass,
+                   y = Year,
+                   color = SpeciesID)) +
+    labs(x = "Monoculture biomass",
+         y = "Extinction year") +
+    theme_bw() +
+    theme(legend.position = "none")
+
+```

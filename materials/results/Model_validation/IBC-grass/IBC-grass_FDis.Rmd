@@ -1,0 +1,336 @@
+---
+title: "Functional dispersion in IBC_grass.noNDD"
+output: 
+    html_document:
+        toc: true
+        toc_float: true
+        number_section: true
+        highlight: zenburn
+knit: (function(inputFile, encoding) 
+        {
+          rmarkdown::render(inputFile, encoding = encoding, output_dir = "markdowns") 
+        }
+      )
+---
+
+<style>
+pre {
+  overflow-x: auto;
+}
+pre code {
+  word-wrap: normal;
+  white-space: pre;
+}
+</style>
+
+```{r setup, include=FALSE}
+
+options(width = 1000)
+
+knitr::opts_chunk$set(echo = TRUE,
+                      warning = FALSE,
+                      message = FALSE,
+                      fig.height = 4,
+                      fig.width = 8,
+                      size = "small") 
+
+library(data.table)
+library(tidyverse)
+library(ggthemes)
+library(viridis)
+library(knitr)
+
+library(rstan)
+library(brms)
+library(tidybayes)
+library(modelr)
+library(sjstats)
+library(sjPlot)
+
+```
+
+```{r load-data, include=FALSE}
+
+setwd("/Users/Theodore/Documents/Dropbox/Work/Projects/SimNet/Modelling_Experiment/scripts/SimNet_BayesianAnalysis")
+
+IBC_grass.noNDD <- readRDS(file = "brms_models.rds") %>%
+    filter(Model == "IBC_grass.NDD") %>% 
+    filter(measure == "FDis")
+
+```
+This document describes IBC_grass.noNDD, using **functional dispersion** as the focal biodiversity metric.
+
+****************************************************************************************************
+# Initial inspection
+
+The raw data:
+```{r raw-data}
+
+IBC_grass.noNDD$data %>%
+    as.data.frame() %>%
+    head(10) %>%
+    kable()
+
+```
+
+Plotted without fits:
+```{r plotted-data}
+ggplot(IBC_grass.noNDD %>% unnest(data)) +
+    geom_point(aes(x = FDis,
+                   y = total.biomass,
+                   color = as.factor(Ninitial))) +
+    facet_grid(. ~ Stage) +
+    labs(x = "Functional dispersion",
+         y = "Total biomass",
+         color = "Richness\ntreatment") +
+    scale_color_viridis(discrete = TRUE) +
+    theme_bw()
+
+```
+
+****************************************************************************************************
+# Fitting the model
+
+## Main effect
+
+The main effect represents the relationship between diversity and total biomass without taking into
+account the richness treatment. 
+
+To produce this model, we use the call:
+```{r main-effect-formula, eval=FALSE}
+
+brm(formula = total.biomass ~ -1 + Stage + Stage:FDis,
+    data = IBC_grass.noNDD)
+
+```
+
+A summary table of the result:
+```{r main-effect-display}
+
+IBC_grass.noNDD$mainEffect[[1]]
+
+```
+> Note the `Rhat` summary column: variation from 1.0 indicates the the model did not converge.
+
+The R-squared:
+```{r main-effect-R2}
+
+rstantools::bayes_R2(IBC_grass.noNDD$mainEffect[[1]])
+
+```
+
+****************************************************************************************************
+### Posterior predictive checks
+
+We next use posterior predictive checks (PPC) to judge the fit of the model. These compare the real data
+to the posterior distribution, conditioned on the observed data.
+
+The density of both the real data (`y`, black line), and from fitted draws of the models (`y_rep`, blue lines).
+```{r main-effect-PPC-PDF}
+
+brms::pp_check(IBC_grass.noNDD$mainEffect[[1]]) +
+    labs(x = "Total biomass") +
+    theme_bw() 
+
+```
+<br><br>
+
+The second PPC for the main effect is the average prediction (`y_rep`) for each real datapoint (`y`). 
+A line indicates a 1:1 correspondence for reference.
+```{r main-effect-scatter-avg}
+
+brms::pp_check(IBC_grass.noNDD$mainEffect[[1]],
+               type = 'scatter_avg_grouped',
+               group = "Stage") +
+    geom_abline(intercept = 0,
+                slope = 1) +
+    labs(title = "Realized total biomass to average predicted total biomass") +
+    theme_bw()
+
+```
+<br><br>
+
+Lastly, we inspect the highest-density interval (HDI) for each effect within the model. This characterizes the
+uncertainty of our posterior distributions. Highest-density intervals can be thought of as credibility intervals.
+A nice graphic explaining them can be found
+[here](https://mathematica.stackexchange.com/questions/173282/computing-credible-region-highest-posterior-density-from-empirical-distributio).
+I use the 89% HDI as recommended by Kruschke (2014), see [here](https://easystats.github.io/bayestestR/reference/hdi.html).
+```{r main-effect-HDI}
+
+sjPlot::plot_model(IBC_grass.noNDD$mainEffect[[1]],
+                   title = "89% Highest-density intervals")
+
+```
+
+****************************************************************************************************
+## Treatment effects
+
+For the treatment effect we incorporate the different richness treatments into the model, giving
+each combination a different intercept and slope.
+
+We use the formula:
+```{r treatmented-effect-formula, eval=FALSE}
+
+brm(formula = total.biomass ~ -1 + Ninitial:Stage + Ninitial:Stage:FDis,
+    data = IBC_grass.noNDD)
+
+```
+Note that both `Ninitial` and `Stage` are treated as categorical variables. Further, because both the monocultures
+and the singleton 64-species community have no variation with respect to realized diversity, they are omitted from this model.
+
+The summary table:
+```{r treatment-effect-display}
+
+IBC_grass.noNDD$treatmentEffect[[1]]
+
+```
+We now see that there is an intercept for each combination of `Ninitial` and `Stage`, and a slope that
+describes this this combination with reference to `FDis`.
+
+> Note the `Rhat` summary column: variation from 1.0 indicates the the model did not converge.
+
+The R-squared:
+```{r treatment-effect-R2}
+
+rstantools::bayes_R2(IBC_grass.noNDD$treatmentEffect[[1]])
+
+```
+
+****************************************************************************************************
+### Posterior predictive checks
+
+As before, initially we compare the distribution of the real data (`y`, black line) to simulated
+distributions output from our model (`y_rep`, blue lines).
+```{r treatment-effect-PPC-PDF}
+
+brms::pp_check(IBC_grass.noNDD$treatmentEffect[[1]]) +
+    labs(x = "Total biomass") +
+    theme_bw()
+
+```
+<br><br>
+
+And now a scatter plot of the simulated data in relation to the real data, grouping the comparison
+of `y` to `y_rep` by `Ninitial`.
+```{r treatment-effect-PPC-scatter-avg}
+
+brms::pp_check(IBC_grass.noNDD$treatmentEffect[[1]],
+               type = 'scatter_avg_grouped',
+               group = "Ninitial") +
+    geom_abline(intercept = 0,
+                slope = 1) +
+    labs(title = "Realized total biomass to average predicted total biomass") +
+    theme_bw()
+
+```
+<br><br>
+
+The 89% highest-density interval (HDI):
+```{r treatment-effect-HDI}
+
+sjPlot::plot_model(IBC_grass.noNDD$treatmentEffect[[1]],
+                   title = "89% Highest-density intervals")
+
+```
+
+****************************************************************************************************
+# Plotting the final model fits
+
+And now I plot the final fits:
+```{r fits}
+
+extract_significances_mainEffect <- function(model_, measure_)
+{
+    hdi_ <- bayestestR::hdi(model_) %>%
+        mutate(significant = !(0 >= CI_low & 0 <= CI_high))
+
+    hdi_ <- hdi_ %>%
+        filter(str_detect(Parameter, measure_)) %>%
+        mutate(Stage = ifelse(str_detect(Parameter, "metacommunity"),
+                              "metacommunity",
+                              "isolation"))
+
+    hdi_ <- hdi_ %>%
+        mutate(Stage = as.factor(Stage)) %>%
+        select(Stage, significant)
+  
+  hdi_ <- hdi_ %>% 
+    mutate(Stage = fct_relevel(Stage, c("metacommunity", "isolation")))
+
+    return(hdi_)
+}
+
+extract_significances_treatmentEffect <- function(model_, measure_)
+{
+    hdi_ <- bayestestR::hdi(model_) %>%
+        mutate(significant = !(0 >= CI_low & 0 <= CI_high))
+
+    hdi_ <- hdi_ %>%
+        filter(str_detect(Parameter, measure_)) %>%
+        mutate(Stage = ifelse(str_detect(Parameter, "metacommunity"),
+                              "metacommunity",
+                              "isolation")) %>%
+        mutate(Ninitial = str_extract(Parameter, "\\d+"))
+
+    hdi_ <- hdi_ %>%
+        mutate(Stage = as.factor(Stage),
+               Ninitial = as.factor(Ninitial)) %>%
+        select(Stage, Ninitial, significant)
+  
+  hdi_ <- hdi_ %>% 
+    mutate(Stage = fct_relevel(Stage, c("metacommunity", "isolation")))
+
+    return(hdi_)
+}
+
+data <- IBC_grass.noNDD %>% unnest(data)
+mainEffect_ <- IBC_grass.noNDD$mainEffect[[1]]
+treatmentEffect_ <- IBC_grass.noNDD$treatmentEffect[[1]]
+
+mainEffect <- data %>%
+    group_by(Stage) %>%
+    data_grid(FDis) %>%
+    add_fitted_draws(mainEffect_) %>%
+    inner_join(extract_significances_mainEffect(mainEffect_, "FDis"))
+
+treatmentEffect <- data %>%
+    filter(Ninitial %in% levels(treatmentEffect_$data$Ninitial)) %>%
+    droplevels() %>%
+    group_by(Ninitial, Stage) %>%
+    data_grid(FDis) %>%
+    add_fitted_draws(treatmentEffect_) %>%
+    inner_join(extract_significances_treatmentEffect(treatmentEffect_, "FDis"))
+
+ggplot() +
+    geom_point(data = data,
+               aes(x = FDis,
+                   y = total.biomass,
+                   color = Ninitial),
+               alpha = 0.9) +
+    stat_lineribbon(data = mainEffect,
+                    aes(x = FDis,
+                        y = .value,
+                        group = Stage,
+                        linetype = significant),
+                    alpha = 0.5,
+                    show.legend = FALSE) +
+    stat_lineribbon(data = treatmentEffect,
+                    aes(x = FDis,
+                        y = .value,
+                        color = Ninitial,
+                        group = Ninitial,
+                        linetype = significant),
+                    alpha = 0.5,
+                    show.legend = FALSE) +
+    scale_linetype_manual(values = c("twodash", "solid")) +
+    facet_grid(. ~ Stage) +
+    labs(x = "FDis",
+         y = "Total biomass",
+         color = "Richness\ntreatment") +
+    scale_color_viridis(discrete = TRUE) +
+    scale_fill_brewer(palette = "Greys") +
+    theme_bw() 
+
+```
+Ribbons indicate 95%, 80%, and 50% credibility intervals. The black line represents the main effect,
+omitting the richness treatments. Dashed lines have estimates that include 0 within their 89% HDI.

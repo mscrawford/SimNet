@@ -1,0 +1,213 @@
+---
+title: "Lindsay's model"
+author: "Michael Crawford"
+output: 
+    html_document:
+        toc: true
+        toc_float: true
+        number_section: true
+        highlight: zenburn
+knit: (function(inputFile, encoding) 
+        {
+          rmarkdown::render(inputFile, encoding = encoding, output_dir = "markdowns") 
+        }
+      )
+---
+
+<style>
+pre {
+overflow-x: auto;
+}
+pre code {
+word-wrap: normal;
+white-space: pre;
+}
+</style>
+
+```{r setup, include=FALSE}
+
+options(width = 1000)
+
+knitr::opts_chunk$set(echo = TRUE,
+                      warning = FALSE,
+                      message = FALSE,
+                      fig.height = 4,
+                      fig.width = 8,
+                      size = "small") 
+
+library(data.table)
+library(tidyverse)
+library(ggthemes)
+library(viridis)
+library(cowplot)
+library(scales)
+library(plotly)
+library(randomForest)
+library(pdp)
+
+```
+
+```{r load-data, echo=FALSE}
+
+setwd("/Users/Theodore/Documents/Dropbox/Work/Projects/SimNet/Modelling_Experiment/data")
+
+load("lindsaymod_trans_exp_out_HPC.rda")
+
+lindsay <- datout %>%
+    mutate(Biomass = Productivity) %>%
+    select(-Productivity)
+
+rm(datout)
+
+# lindsay ran the 64 species simulation too many times
+lindsay_64 <- lindsay %>%
+    filter(Ninitial == 64) %>%
+    group_by(Model, SeedRain, SpeciesID, Stage, Year) %>%
+    filter(Rep == first(Rep))
+
+lindsay_not64 <- lindsay %>%
+    filter(Ninitial != 64)
+
+lindsay <- bind_rows(lindsay_64, lindsay_not64) %>%
+    ungroup()
+
+# Remove all species with inappreciable biomass
+lindsay <- lindsay %>%
+    mutate(Biomass = ifelse(Biomass < 1,
+                            0,
+                            Biomass))
+
+lindsay_traits <- read.csv("lindsaymod_trans_exp_speciesdata.csv")
+
+lindsay <- lindsay %>%
+    mutate(Model = as.character(Model),
+           Ninitial = as.factor(Ninitial),
+           Rep = as.numeric(Rep),
+           SeedRain = as.factor(SeedRain),
+           SpeciesID = as.character(SpeciesID),
+           Stage = as.factor(Stage),
+           Year = as.numeric(Year),
+           Biomass = as.numeric(Biomass))
+
+lindsay <- lindsay %>%
+    mutate(Stage = recode(Stage,
+                          assembly = "metacommunity",
+                          disassembly = "isolation"))
+
+lindsay <- lindsay %>%
+    filter(SeedRain %in% c(100))
+
+lindsay <- lindsay %>%
+    ungroup() %>% # There shouldn't be groups anyways
+    mutate(Biomass = scales::rescale(Biomass,
+                                     to = c(0, 100)))
+
+lindsay <- lindsay %>%
+    select(-Model, -SeedRain) %>%
+    mutate(SpeciesID = as.factor(SpeciesID))
+
+lindsay_traits <- lindsay_traits %>%
+    mutate(SpeciesID = as.factor(SpeciesID))
+
+lindsay <- inner_join(lindsay, lindsay_traits, by = c("SpeciesID"))
+
+```
+
+# Biomass in monoculture vs. traits
+
+First, a facetted plot of the relationship between each species' trait values and the species' monoculture biomass.
+```{r biomass-in-monoculture}
+
+monocultures <- lindsay %>%
+    filter(Ninitial == 1,
+           Year %in% c(100, 200)) %>%
+    rename(monoculture.biomass = Biomass) %>%
+    select(-Ninitial, -Year, -Rep) %>%
+    pivot_longer(c(-SpeciesID, -Stage, -monoculture.biomass),
+                 names_to = "trait", 
+                 values_to = "trait.value")
+
+ggplot(monocultures) +
+    geom_point(aes(x = trait.value,
+                   y = monoculture.biomass)) +
+    facet_grid(cols = vars(trait),
+               rows = vars(Stage),
+               scales = "free_x") +
+    labs(x = "Trait value",
+         y = "Monoculture biomass") +
+    theme_bw()
+
+```
+
+Within the monocultures, adding 100% of the average seeds during the metacommunity phase doesn't make a difference in
+the monoculture biomass (indeed, the 1000% seed addition also makes no difference). 
+
+# Biomass in mixture vs. traits
+
+> Please note that for Lindsay's model, the patterns observed in the 32-species mixtures are similar
+> to those seen in the 64-species mixture. Therefore, I omit the 64-species mixture from this analysis.
+
+I now average the per-species biomass among all mixtures in which it is present, and plot this
+biomass along the trade-off gradient. Both the color and size of the points are tied to the
+natural log of the biomass in mixture.
+```{r biomass-in-32-mixture}
+    
+lindsay.communities <- lindsay %>%
+    filter(Ninitial == 32,
+           Year %in% c(100, 200)) %>%
+    group_by(Stage, SpeciesID, thetai, Vi) %>%
+    summarise(mean.biomass = mean(Biomass))
+
+ggplot(lindsay.communities) +
+    geom_point(aes(x = thetai,
+                   y = Vi,
+                   color = log(mean.biomass),
+                   size = log(mean.biomass))) +
+    facet_grid(cols = vars(Stage)) +
+    scale_color_viridis() +
+    labs(x = "Theta_i",
+         y = "V_i",
+         color = "Biomass",
+         size = "Biomass") +
+    theme_bw()
+
+```
+
+In the 32-species mixture, seed addition tends to artificially increase the biomass of species with 
+the moderate trait values. After seed addition is discontinued, species at the ends of the gradient
+tend to come to dominance. However, no species are extirpated from the simulation. Summing each species'
+average biomass, the total average biomass during the metacommunity phase is `154`, while during the
+isolation phase it is `167`.
+
+# Biomass in mixture vs. biomass in monoculture
+
+Next I plot the relationship between biomass in monoculture and biomass in mixture. 
+```{r biomass-in-32-mixture-vs-biomass-in-monoculture}
+
+lindsay.monoculture.vs.mixture <- lindsay %>%
+    filter(Ninitial %in% c(1, 32),
+           Year %in% c(100, 200)) %>%
+    group_by(Ninitial, Stage, SpeciesID, thetai, Vi) %>%
+    summarise(mean.biomass = mean(Biomass))
+
+lindsay.monoculture.vs.mixture <- lindsay.monoculture.vs.mixture %>%
+    pivot_wider(names_from = Ninitial,
+                values_from = mean.biomass) 
+
+ggplot(lindsay.monoculture.vs.mixture) +
+    geom_point(aes(x = `1`,
+                   y = `32`,
+                   color = Vi),
+               size = 4) +
+    facet_grid(cols = vars(Stage)) +
+    scale_color_viridis() +
+    labs(x = "Monoculture biomass",
+         y = "Mixture biomass",
+         color = "V_i") +
+    theme_bw()
+
+```
+
+With seed addition, there is a direct relationship between monoculture biomass and mixture biomass.
+Removing external seed addition, species with moderate values along the trade-off gradient see reductions
+within their biomass in mixutre, relative to their monoculture biomasses.
