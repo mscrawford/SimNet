@@ -211,24 +211,31 @@ main.effect.conf.int <- main.effect.conf.int %>%
                     })) %>%
     unnest(c(mean, ci))
 
+main.effect.conf.int <- main.effect.conf.int %>%
+    group_by(Stage) %>%
+    select(-ci_group, -data) %>%
+    filter(intercept.mean == min(intercept.mean) | intercept.mean == max(intercept.mean)) %>%
+    mutate(X = list(seq(min(main.points$r) - 0.05, 1, length.out = 100))) %>%
+    unnest(c(X)) %>%
+    mutate(Y_min = `2.5%` * X + intercept.mean,
+           Y_max = `97.5%` * X + intercept.mean) %>%
+    select(-intercept.mean, -`2.5%`, -`97.5%`) %>%
+    group_by(Stage, X) %>%
+    summarise(Y_min = min(Y_min), Y_max = max(Y_max))
+
 a <- ggplot() +
     geom_point(data = main.points,
                mapping = aes(x = r,
                              y = estimate,
                              color = Model),
                alpha = 0.25) +
-    geom_abline(data = main.effect.conf.int,
-                mapping = aes(intercept = intercept.mean,
-                              slope = `2.5%`,
-                              group = ci_group),
-                color =  "darkred",
-                alpha = 0.33) +
-    geom_abline(data = main.effect.conf.int,
-                mapping = aes(intercept = intercept.mean,
-                              slope = `97.5%`,
-                              group = ci_group),
-                color =  "darkred",
-                alpha = 0.33) +
+    geom_ribbon(data = main.effect.conf.int,
+                mapping = aes(x = X,
+                              ymin = Y_min,
+                              ymax = Y_max),
+                alpha = 0.66) +
+    geom_hline(yintercept = mean(main.points$estimate),
+               linetype = 3) +
     facet_grid(cols = vars(Stage)) +
     labs(x = paste0("Pearson's r, monoculture ", Y_VAL, " and ", Y_VAL, " in 32-species mixture"),
          y = paste0("Estimate, mixture diversity vs. total ", Y_VAL)) +
@@ -275,24 +282,31 @@ treatment.effect.conf.int <- treatment.effect.conf.int %>%
                     })) %>%
     unnest(c(mean, ci))
 
+treatment.effect.conf.int <- treatment.effect.conf.int %>%
+    group_by(Stage, Ninitial,) %>%
+    select(-ci_group, -data) %>%
+    filter(intercept.mean == min(intercept.mean) | intercept.mean == max(intercept.mean)) %>%
+    mutate(X = list(seq(min(treatment.points$r) - 0.05, 1, length.out = 100))) %>%
+    unnest(c(X)) %>%
+    mutate(Y_min = `2.5%` * X + intercept.mean,
+           Y_max = `97.5%` * X + intercept.mean) %>%
+    select(-intercept.mean, -`2.5%`, -`97.5%`) %>%
+    group_by(Stage, Ninitial, X) %>%
+    summarise(Y_min = min(Y_min), Y_max = max(Y_max))
+
 b <- ggplot() +
     geom_point(data = treatment.points,
                mapping = aes(x = r,
                              y = estimate,
                              color = Model),
                alpha = 0.25) +
-    geom_abline(data = treatment.effect.conf.int,
-                mapping = aes(intercept = intercept.mean,
-                              slope = `2.5%`,
-                              group = ci_group),
-                color = "darkred",
-                alpha = 0.33) +
-    geom_abline(data = treatment.effect.conf.int,
-                mapping = aes(intercept = intercept.mean,
-                              slope = `97.5%`,
-                              group = ci_group),
-                color = "darkred",
-                alpha = 0.33) +
+    geom_ribbon(data = treatment.effect.conf.int,
+                mapping = aes(x = X,
+                              ymin = Y_min,
+                              ymax = Y_max),
+                alpha = 0.66) +
+    geom_hline(yintercept = mean(treatment.points$estimate),
+               linetype = 3) +
     facet_grid(cols = vars(Stage),
                rows = vars(Ninitial)) +
     labs(x = paste0("Pearson's r, monoculture ", Y_VAL, " and ", Y_VAL, " in mixture"),
