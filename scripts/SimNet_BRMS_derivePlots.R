@@ -121,24 +121,20 @@ d <- d %>%
     mutate(fitted_plot = pmap(.l = list(data, mainEffect, treatmentEffect, measure),
                               .f = ~ brm.draw.fits.fun(..1, ..2, ..3, ..4)))
 
-d <- d %>%
-    filter(Model != "IBC_grass.noNDD")
-
-d <- d %>% filter(measure == "Shannon")
-
 # Save plots
 walk(.x = unique(d$measure),
      .f = ~
          {
              p.list <- (d %>% filter(measure == .x))$fitted_plot
 
-             p <- cowplot::plot_grid(plotlist = lapply(p.list,
-                                                       function(x) {
-                                                           x + theme(legend.position="none")
-                                                       }),
+             p <- cowplot::plot_grid(plotlist = map(.x = p.list,
+                                                    .f = ~ {
+                                                        .x + theme(legend.position="none")
+                                                    }),
                                      labels = c("Adam", "Lindsay", "IBC-grass", "PPA", "TROLL", "Björn"),
+                                     # labels = c("C2018", "T2013", "M2009", "R2020", "M2017", "R2006"),
                                      ncol = 2,
-                                     nrow = length(p.list) / 2)
+                                     nrow = ceiling(length(p.list) / 2))
 
              legend <- get_legend(p.list[[1]])
 
@@ -165,9 +161,6 @@ setwd("../../tmp")
 d <- d %>%
     mutate(plot = pmap(.l = list(data, mainEffect, treatmentEffect, measure),
                        .f = ~ brm.draw.fits.fun(..1, ..2, ..3, ..4)))
-
-d <- d %>%
-    filter(Model != "IBC_grass.noNDD")
 
 # Save trait plots
 pwalk(.l = expand_grid(unique(d$measure),

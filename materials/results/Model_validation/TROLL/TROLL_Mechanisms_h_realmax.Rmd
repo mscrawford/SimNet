@@ -38,9 +38,10 @@ set.seed(1)
 
 ```{r load-data, echo=FALSE, message=FALSE, warning=FALSE}
 
-setwd("/Users/Theodore/Documents/Dropbox/Work/Projects/SimNet/Modelling_Experiment/data")
+setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
+setwd("../../../../data/raw")
 
-troll <- fread("TROLL_Table1.txt") %>%
+troll <- readRDS("TROLL_Table1.rds") %>%
     select(-LineNumber, -Productivity) %>%
     mutate(SpeciesID = as.factor(SpeciesID),
            SpeciesID = as.numeric(SpeciesID))

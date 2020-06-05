@@ -24,8 +24,7 @@ setwd("../tmp")
 
 pearsons <- model_runs %>%
     bind_rows() %>%
-    filter(Ninitial != 64,
-           Model != "IBC_grass.noNDD")
+    filter(Ninitial != 64)
 
 pearsons.mono <- pearsons %>%
     filter(Ninitial == 1) %>%
@@ -71,21 +70,19 @@ setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
 estimates <- readRDS(file = paste0("../data/brms_models/", Y_VAL, "_brms_models.rds"))
 setwd("../tmp")
 
-estimates <- estimates %>%
-    filter(measure == "Shannon",
-           Model != "IBC_grass.noNDD")
+# estimates <- estimates %>%
+# filter(measure == "Shannon")
 
 # Main effects
 main.effects <- estimates %>%
     select(Model, measure, mainEffect)
 
 bootstrap.main.estimate <- main.effects %>%
-    group_by(Model) %>%
     mutate(bootstrap.estimate = map(.x = mainEffect,
                                     .f = ~ {
                                         id = seq(1, bootstrap_N)
 
-                                        estimates_ <- posterior_samples(.x, ":Shannon") %>%
+                                        estimates_ <- posterior_samples(.x, paste0(":", measure)) %>%
                                             sample_n(bootstrap_N,
                                                      replace = TRUE)
 
@@ -106,20 +103,19 @@ bootstrap.main.estimate <- main.effects %>%
 bootstrap.main.effect <- inner_join(bootstrap.pearsons %>% filter(Ninitial == 32),
                                     bootstrap.main.estimate) %>%
     ungroup() %>%
-    select(Model, Stage, id, r, estimate)
+    select(measure, Model, Stage, id, r, estimate)
 
 
 # Treatment effects
 treatment.effects <- estimates %>%
-    select(Model, measure, treatmentEffect)
+    select(measure, Model,treatmentEffect)
 
 bootstrap.treatment.estimates <- treatment.effects %>%
-    group_by(Model) %>%
     mutate(bootstrap.estimates = map(.x = treatmentEffect,
                                      .f = ~ {
                                          id = seq(1, bootstrap_N)
 
-                                         estimates_ <- posterior_samples(.x, ":Shannon") %>%
+                                         estimates_ <- posterior_samples(.x, paste0(":", measure)) %>%
                                              sample_n(bootstrap_N,
                                                       replace = TRUE)
 
@@ -143,7 +139,7 @@ bootstrap.treatment.estimates <- treatment.effects %>%
 
 bootstrap.treatment.effect <- inner_join(bootstrap.pearsons, bootstrap.treatment.estimates) %>%
     ungroup() %>%
-    select(Stage, Ninitial, id, Model, r, estimate)
+    select(measure, Model, Stage, Ninitial, id, r, estimate)
 
 
 # ---------------------------------------------------------------------------------------------
@@ -151,7 +147,7 @@ bootstrap.treatment.effect <- inner_join(bootstrap.pearsons, bootstrap.treatment
 
 # Main effect
 bootstrap.main.effect <- bootstrap.main.effect %>%
-    group_by(Stage, id) %>%
+    group_by(measure, Stage, id) %>%
     nest() %>%
     mutate(model = map(.x = data,
                        .f = ~ lmodel2::lmodel2(.x$estimate ~ .x$r)))
@@ -163,7 +159,7 @@ bootstrap.main.effect <- bootstrap.main.effect %>%
 
 # Treatment effect
 bootstrap.treatment.effect <- bootstrap.treatment.effect %>%
-    group_by(Stage, Ninitial, id) %>%
+    group_by(measure, Stage, Ninitial, id) %>%
     nest() %>%
     mutate(model = map(.x = data,
                        .f = ~ lmodel2::lmodel2(.x$estimate ~ .x$r)))
@@ -183,18 +179,18 @@ setwd("../tmp")
 # Main effect
 main.points <- bootstrap.main.effect %>%
     ungroup() %>%
-    select(Stage, data) %>%
+    select(measure, Stage, data) %>%
     unnest(data)
 
 main.effect.conf.int <- bootstrap.main.effect %>%
     ungroup() %>%
-    select(Stage, id, Intercept, Slope) %>%
+    select(measure, Stage, id, Intercept, Slope) %>%
     group_by(Stage) %>%
     arrange(Intercept) %>%
     mutate(ci_group = dplyr::ntile(Intercept, n = 25))
 
 main.effect.conf.int <- main.effect.conf.int %>%
-    group_by(Stage, ci_group) %>%
+    group_by(measure, Stage, ci_group) %>%
     nest() %>%
     mutate(mean = map(.x = data,
                       .f = ~ {
@@ -205,14 +201,14 @@ main.effect.conf.int <- main.effect.conf.int %>%
                     .f = ~ {
                         .x %>%
                             infer::specify(response = Slope) %>%
-                            infer::generate(reps = 1000) %>%
+                            infer::generate(reps = 1000, type = "bootstrap") %>%
                             infer::calculate(stat = "mean") %>%
                             infer::get_confidence_interval(level = 0.95, type = "percentile")
                     })) %>%
     unnest(c(mean, ci))
 
 main.effect.conf.int <- main.effect.conf.int %>%
-    group_by(Stage) %>%
+    group_by(measure, Stage) %>%
     select(-ci_group, -data) %>%
     filter(intercept.mean == min(intercept.mean) | intercept.mean == max(intercept.mean)) %>%
     mutate(X = list(seq(min(main.points$r) - 0.05, 1, length.out = 100))) %>%
@@ -220,52 +216,72 @@ main.effect.conf.int <- main.effect.conf.int %>%
     mutate(Y_min = `2.5%` * X + intercept.mean,
            Y_max = `97.5%` * X + intercept.mean) %>%
     select(-intercept.mean, -`2.5%`, -`97.5%`) %>%
-    group_by(Stage, X) %>%
+    group_by(measure, Stage, X) %>%
     summarise(Y_min = min(Y_min), Y_max = max(Y_max))
 
-a <- ggplot() +
-    geom_point(data = main.points,
-               mapping = aes(x = r,
-                             y = estimate,
-                             color = Model),
-               alpha = 0.25) +
-    geom_ribbon(data = main.effect.conf.int,
-                mapping = aes(x = X,
-                              ymin = Y_min,
-                              ymax = Y_max),
-                alpha = 0.66) +
-    geom_hline(yintercept = mean(main.points$estimate),
-               linetype = 3) +
-    facet_grid(cols = vars(Stage)) +
-    labs(x = paste0("Pearson's r, monoculture ", Y_VAL, " and ", Y_VAL, " in 32-species mixture"),
-         y = paste0("Estimate, mixture diversity vs. total ", Y_VAL)) +
-    scale_color_viridis_d() +
-    guides(colour = guide_legend(override.aes = list(alpha = 1))) +
-    theme_bw(12) +
-    theme(aspect.ratio = 1); a
+no.slope.lines <- main.points %>%
+    group_by(measure, Stage) %>%
+    summarise(mean.estimate = mean(estimate))
 
-cowplot::save_plot(a,
-                   filename = paste0(Y_VAL, "_mainEffects.png"),
-                   ncol = 2,
-                   nrow = 1,
-                   base_asp = 1.1)
+walk(.x = unique(estimates$measure),
+     .f = ~
+         {
+             main.points__ <- main.points %>%
+                 filter(measure == .x)
 
+             main.effect.conf.int__ <- main.effect.conf.int %>%
+                 filter(measure == .x)
+
+             no.slope.lines__ <- no.slope.lines %>%
+                 filter(measure == .x)
+
+             a <- ggplot() +
+                 geom_point(data = main.points__,
+                            mapping = aes(x = r,
+                                          y = estimate,
+                                          color = Model),
+                            alpha = 0.20) +
+                 geom_ribbon(data = main.effect.conf.int__,
+                             mapping = aes(x = X,
+                                           ymin = Y_min,
+                                           ymax = Y_max),
+                             fill = "darkgrey",
+                             alpha = 0.66) +
+                 geom_hline(data = no.slope.lines__,
+                            mapping = aes(yintercept = mean.estimate),
+                            linetype = 3) +
+                 facet_grid(cols = vars(Stage)) +
+                 labs(x = paste0("Pearson's r, monoculture ", Y_VAL, " and ", Y_VAL, " in 32-species mixture"),
+                      y = paste0("Model estimate, effect of diversity on ", Y_VAL)) +
+                 scale_color_viridis_d() +
+                 guides(colour = guide_legend(override.aes = list(alpha = 1))) +
+                 theme_bw(11) +
+                 theme(aspect.ratio = 1); a
+
+             cowplot::save_plot(a,
+                                filename = paste0(Y_VAL, "_acrossTreatmentEffects_", .x, ".png"),
+                                ncol = 2,
+                                nrow = 1,
+                                base_asp = 1.1)
+
+         }
+)
 
 # Treatment effect
 treatment.points <- bootstrap.treatment.effect %>%
     ungroup() %>%
-    select(Stage, Ninitial, data) %>%
+    select(measure, Stage, Ninitial, data) %>%
     unnest(data)
 
 treatment.effect.conf.int <- bootstrap.treatment.effect %>%
     ungroup() %>%
-    select(Ninitial, Stage, id, Intercept, Slope) %>%
-    group_by(Ninitial, Stage) %>%
+    select(measure, Ninitial, Stage, id, Intercept, Slope) %>%
+    group_by(measure, Ninitial, Stage) %>%
     arrange(Intercept) %>%
     mutate(ci_group = dplyr::ntile(Intercept, n = 25))
 
 treatment.effect.conf.int <- treatment.effect.conf.int %>%
-    group_by(Ninitial, Stage, ci_group) %>%
+    group_by(measure, Ninitial, Stage, ci_group) %>%
     nest() %>%
     mutate(mean = map(.x = data,
                       .f = ~ {
@@ -276,14 +292,14 @@ treatment.effect.conf.int <- treatment.effect.conf.int %>%
                     .f = ~ {
                         .x %>%
                             infer::specify(response = Slope) %>%
-                            infer::generate(reps = 1000) %>%
+                            infer::generate(reps = 1000, type = "bootstrap") %>%
                             infer::calculate(stat = "mean") %>%
                             infer::get_confidence_interval(level = 0.95, type = "percentile")
                     })) %>%
     unnest(c(mean, ci))
 
 treatment.effect.conf.int <- treatment.effect.conf.int %>%
-    group_by(Stage, Ninitial,) %>%
+    group_by(measure, Stage, Ninitial,) %>%
     select(-ci_group, -data) %>%
     filter(intercept.mean == min(intercept.mean) | intercept.mean == max(intercept.mean)) %>%
     mutate(X = list(seq(min(treatment.points$r) - 0.05, 1, length.out = 100))) %>%
@@ -291,33 +307,55 @@ treatment.effect.conf.int <- treatment.effect.conf.int %>%
     mutate(Y_min = `2.5%` * X + intercept.mean,
            Y_max = `97.5%` * X + intercept.mean) %>%
     select(-intercept.mean, -`2.5%`, -`97.5%`) %>%
-    group_by(Stage, Ninitial, X) %>%
+    group_by(measure, Stage, Ninitial, X) %>%
     summarise(Y_min = min(Y_min), Y_max = max(Y_max))
 
-b <- ggplot() +
-    geom_point(data = treatment.points,
-               mapping = aes(x = r,
-                             y = estimate,
-                             color = Model),
-               alpha = 0.25) +
-    geom_ribbon(data = treatment.effect.conf.int,
-                mapping = aes(x = X,
-                              ymin = Y_min,
-                              ymax = Y_max),
-                alpha = 0.66) +
-    geom_hline(yintercept = mean(treatment.points$estimate),
-               linetype = 3) +
-    facet_grid(cols = vars(Stage),
-               rows = vars(Ninitial)) +
-    labs(x = paste0("Pearson's r, monoculture ", Y_VAL, " and ", Y_VAL, " in mixture"),
-         y = paste0("Estimate, mixture diversity vs. total ", Y_VAL)) +
-    scale_color_viridis_d() +
-    guides(colour = guide_legend(override.aes = list(alpha = 1))) +
-    theme_bw(14) +
-    theme(aspect.ratio = 1); b
+no.slope.lines <- treatment.points %>%
+    group_by(measure, Stage, Ninitial) %>%
+    summarise(mean.estimate = mean(estimate))
 
-cowplot::save_plot(b,
-                   filename = paste0(Y_VAL, "_treatmentEffects.png"),
-                   ncol = 2,
-                   nrow = 5,
-                   base_asp = 1.1)
+walk(.x = unique(estimates$measure),
+     .f = ~
+         {
+
+             treatment.points__ <- treatment.points %>%
+                 filter(measure == .x)
+
+             treatment.effect.conf.int__ <- treatment.effect.conf.int %>%
+                 filter(measure == .x)
+
+             no.slope.lines__ <- no.slope.lines %>%
+                 filter(measure == .x)
+
+             b <- ggplot() +
+                 geom_point(data = treatment.points__,
+                            mapping = aes(x = r,
+                                          y = estimate,
+                                          color = Model),
+                            alpha = 0.20) +
+                 geom_ribbon(data = treatment.effect.conf.int__,
+                             mapping = aes(x = X,
+                                           ymin = Y_min,
+                                           ymax = Y_max),
+                             fill = "darkgrey",
+                             alpha = 0.66) +
+                 geom_hline(data = no.slope.lines__,
+                            mapping = aes(yintercept = mean.estimate),
+                            linetype = 3) +
+                 facet_grid(cols = vars(Stage),
+                            rows = vars(Ninitial)) +
+                 labs(x = paste0("Pearson's r, monoculture ", Y_VAL, " and ", Y_VAL, " in mixture"),
+                      y = paste0("Model estimate, effect of diversity on ", Y_VAL)) +
+                 scale_color_viridis_d() +
+                 guides(colour = guide_legend(override.aes = list(alpha = 1))) +
+                 theme_bw(14) +
+                 theme(aspect.ratio = 1); b
+
+             cowplot::save_plot(b,
+                                filename = paste0(Y_VAL, "_withinTreatmentEffects_", .x, ".png"),
+                                ncol = 2,
+                                nrow = 5,
+                                base_asp = 1.1)
+
+         }
+)

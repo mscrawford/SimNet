@@ -146,10 +146,14 @@ troll_traits <- fread("TROLL_Table2.txt") %>%
 # ---------------------------------------------------------------------------------------------
 # SUCC
 
-succ <- readRDS("succ_Table1.rds") %>%
-    select(-Wdh)
+succ <- readRDS("bjoern_Table1_averagedSmooth.rds") %>%
+    select(-Smooth) %>%
+    ungroup()
 
-succ_traits <- readRDS("succ_Table2.rds") %>%
+succ <- succ %>%
+    mutate(Productivity = replace(Productivity, Productivity < 0, 0))
+
+succ_traits <- readRDS("bjoern_Table2.rds") %>%
     select(SpeciesID, maxSize, pLeaf, pRoot, pStorage)
 
 
@@ -158,7 +162,7 @@ succ_traits <- readRDS("succ_Table2.rds") %>%
 model_runs <- list(adam,
                    lindsay,
                    IBC_grass.NDD,
-                   IBC_grass.noNDD,
+                   # IBC_grass.noNDD,
                    PPA,
                    troll,
                    succ)
@@ -201,7 +205,7 @@ model_runs <- map(.x = model_runs,
 model_traits <- list(adam_traits,
                      lindsay_traits,
                      IBC_grass_traits,
-                     IBC_grass_traits,
+                     # IBC_grass_traits,
                      PPA_traits,
                      troll_traits,
                      succ_traits)
@@ -228,7 +232,6 @@ names(models) = map(.x = models,
                         {
                             unique(.x$Model)
                         })
-
 
 # Cleanup -------------------------------------------------------------------------------------
 

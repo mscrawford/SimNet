@@ -14,9 +14,13 @@ setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
 source("SimNet_ReadModels.R")
 setwd("../tmp")
 
-# ---------------------------------------------------------------------------------------------
-# Focal ecosystem function --------------------------------------------------------------------
 
+# ---------------------------------------------------------------------------------------------
+# Options -------------------------------------------------------------------------------------
+
+calculate_FD = TRUE # Toggle whether functional diversity is incorporated (computationally expensive)
+
+# Focal ecosystem function
 # Y_VAL = "biomass"
 Y_VAL = "productivity"
 
@@ -182,7 +186,7 @@ d <- map(.x = models,
                      nest()
 
                  .x <- .x %>%
-                     mutate(FD = map(data, FD_fun),
+                     mutate(FD = ifelse(calculate_FD, map(data, FD_fun), NA),
                             BEF = map(data, BEF_fun)) %>%
                      select(-data) %>%
                      unnest(c(FD, BEF))
@@ -193,8 +197,7 @@ d <- map(.x = models,
 d <- d %>%
     group_by(Model) %>%
     nest() %>%
-    # expand_grid(measure = c("Shannon", "Richness", "FDis"))
-    expand_grid(measure = c("Shannon"))
+    expand_grid(measure = c("Shannon", "Richness", "FDis"))
 
 # When the measure is "FDis", filter data to remove Ninitial == 1
 d <- d %>%
@@ -211,7 +214,7 @@ d <- d %>%
                                   .f = ~ brm_treatmentEffect_fun(..1, ..2, ..3)))
 
 # Save all the model results
-saveRDS(d, file = paste(Y_VAL, "_brms_models.rds", sep = ""))
+saveRDS(d, file = paste0(Y_VAL, "_brms_models.rds"))
 
 
 # -----------------------------------------------------------------------------------------------

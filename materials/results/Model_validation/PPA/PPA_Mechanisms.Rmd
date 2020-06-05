@@ -493,7 +493,7 @@ An important caviate:
 > highest level of biomass production in mixture maximizes both trait axes. This pattern is not seen in
 > the random forest's predictions: Instead, very high, but not maximized, values from PC1 are dominant.
 > This is an artifact, rather than a reality. I could improve this this methodology
-> by using partial dependency plots and contraining the algorithm to not extrapolate outside of the 
+> by using partial dependency plots and constraining the algorithm to not extrapolate outside of the 
 > convex hull of data points.
 
 ****************************************************************************************************

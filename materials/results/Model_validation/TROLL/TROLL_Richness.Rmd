@@ -51,9 +51,10 @@ library(sjPlot)
 
 ```{r load-data, include=FALSE}
 
-setwd("/Users/Theodore/Documents/Dropbox/Work/Projects/SimNet/Modelling_Experiment/scripts/SimNet_BayesianAnalysis")
+setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
+setwd("../../../../data/brms_models")
 
-TROLL <- readRDS(file = "brms_models.rds") %>%
+TROLL <- readRDS(file = "biomass_brms_models.rds") %>%
     filter(Model == "TROLL") %>% 
     filter(measure == "Richness")
 
