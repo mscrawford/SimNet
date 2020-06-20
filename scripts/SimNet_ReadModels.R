@@ -2,6 +2,7 @@ library(data.table)
 library(tidyverse)
 library(scales)
 
+setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
 setwd("../data/raw")
 
 # Some analyses (those that include time to extinction in particular) want to keep each other
@@ -9,6 +10,7 @@ if (!exists("filterYears"))
 {
     filterYears <- TRUE
 }
+
 
 # Read in model results -----------------------------------------------------------------------
 
@@ -19,8 +21,6 @@ load("adammod_trans_exp_out_HPC.rda")
 
 adam <- datout %>%
     mutate(Biomass = Productivity)
-
-rm(datout)
 
 # Adam ran the 64 species simulation too many times
 adam_64 <- adam %>%
@@ -45,6 +45,8 @@ adam <- adam %>%
 
 adam_traits <- read.csv("adammod_trans_exp_speciesdata.csv")
 
+rm(c(datout, adam_64, adam_not64))
+
 
 # ---------------------------------------------------------------------------------------------
 # Lindsay
@@ -53,8 +55,6 @@ load("lindsaymod_trans_exp_out_HPC.rda")
 
 lindsay <- datout %>%
     mutate(Biomass = Productivity)
-
-rm(datout)
 
 # Adam ran the 64 species simulation too many times
 lindsay_64 <- lindsay %>%
@@ -70,6 +70,8 @@ lindsay <- bind_rows(lindsay_64, lindsay_not64) %>%
 
 lindsay_traits <- read.csv("lindsaymod_trans_exp_speciesdata.csv")
 
+rm(c(datout, lindsay_64, lindsay_not64))
+
 
 # ---------------------------------------------------------------------------------------------
 # IBC-grass
@@ -81,12 +83,8 @@ IBC_grass <- d %>%
     select(-SimID, -Stabilization) %>%
     mutate(Productivity = Biomass)
 
-rm(d)
-
 IBC_grass.noNDD <- IBC_grass %>% filter(Model == "IBC_grass.noNDD")
 IBC_grass.NDD <- IBC_grass %>% filter(Model == "IBC_grass.NDD")
-
-rm(IBC_grass)
 
 IBC_grass_traits <- read.csv("IBC-grass_Table2.csv")
 
@@ -98,6 +96,8 @@ remove_cols <- IBC_grass_traits %>%
     names()
 
 IBC_grass_traits <- IBC_grass_traits[, setdiff(names(IBC_grass_traits), remove_cols)]
+
+rm(d, IBC_grass, remove_cols)
 
 
 # ---------------------------------------------------------------------------------------------
@@ -127,6 +127,8 @@ extirpated <- anti_join(PPA_initialCommunities, PPA,
                         by = c("Model", "Ninitial", "Rep", "SeedRain", "SpeciesID", "Stage", "Year"))
 
 PPA <- bind_rows(PPA, extirpated)
+
+rm(c(PPA_initialCommunity, extirpated))
 
 
 # ---------------------------------------------------------------------------------------------
@@ -196,10 +198,7 @@ model_runs <- map(.x = model_runs,
                               filter(Year %in% c(100, 200))
                       }
 
-                      .x <- .x %>%
-                          ungroup() %>% # There shouldn't be groups anyways
-                          mutate(Biomass = scales::rescale(Biomass, to = c(0, 100))) %>%
-                          mutate(Productivity = scales::rescale(Productivity, to = c(0, 100)))
+                      tbl_df(.x)
                   })
 
 model_traits <- list(adam_traits,
@@ -211,29 +210,20 @@ model_traits <- list(adam_traits,
                      succ_traits)
 
 model_traits <- map(.x = model_traits,
-                    .f = ~
-                        {
-                            .x <- .x %>%
-                                mutate(SpeciesID = as.character(SpeciesID))
-                        })
+                    .f = ~ .x %>% mutate(SpeciesID = as.character(SpeciesID)))
 
 
 # Formulation of model datasets ---------------------------------------------------------------
 
 models <- map2(.x = model_runs,
                .y = model_traits,
-               .f = ~
-                   {
-                       inner_join(.x, .y, by = c("SpeciesID"))
-                   })
+               .f = ~ inner_join(.x, .y, by = c("SpeciesID")))
 
 names(models) = map(.x = models,
-                    .f = ~
-                        {
-                            unique(.x$Model)
-                        })
+                    .f = ~ unique(.x$Model))
+
 
 # Cleanup -------------------------------------------------------------------------------------
 
-setwd("../../scripts")
 rm(filterYears)
+setwd("../../scripts")

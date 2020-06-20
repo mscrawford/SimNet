@@ -25,18 +25,30 @@ d <- inner_join(d.mono, d) %>%
 
 d$Ninitial <- droplevels(d$Ninitial)
 
-p <- ggplot(d %>% filter(Ninitial == 32)) +
-    geom_point(aes(x = monoculture.biomass,
-                   y = Biomass,
-                   color = SpeciesID),
-               size = 3) +
-    facet_grid(cols = vars(Stage),
-               rows = vars(Model),
-               scales = "free") +
-    labs(x = "Monoculture biomass",
-         y = "Biomass in 32-species mixture") +
-    guides(color = FALSE) +
-    theme_bw(18) +
-    theme(aspect.ratio = 1); p
+d <- d %>%
+    filter(Ninitial == 32) %>%
+    group_by(Model) %>%
+    nest() %>%
+    mutate(plot = map(.x = data,
+                      .f = ~ {
+                          ggplot(.x) +
+                              geom_point(aes(x = monoculture.biomass,
+                                             y = Biomass,
+                                             color = SpeciesID),
+                                         size = 3,
+                                         show.legend = FALSE) +
+                              facet_grid(cols = vars(Stage)) +
+                              scale_color_viridis_d() +
+                              labs(x = "Monoculture biomass",
+                                   y = "Biomass in mixture") +
+                              theme_bw(16) +
+                              theme(aspect.ratio = 0.618)
+                      })
+           )
 
-cowplot::save_plot(p, filename = "Competitiveness.png", ncol = 6, nrow = 2, base_asp = 1)
+p <- cowplot::plot_grid(plotlist = d$plot,
+                        labels = c("Adam", "Björn", "IBC-grass", "Lindsay", "PPA", "TROLL"),
+                        ncol = 2,
+                        nrow = 3)
+
+cowplot::save_plot(p, filename = "Competitiveness.png", ncol = 4, nrow = 3, base_asp = 1.5)

@@ -9,11 +9,12 @@ library(data.table)
 library(tidyverse)
 library(cowplot)
 
+
 # ---------------------------------------------------------------------------------------------
 # Focal ecosystem function
 
-# Y_VAL = "biomass"
-Y_VAL = "productivity"
+Y_VAL = "biomass"
+# Y_VAL = "productivity"
 
 
 # ---------------------------------------------------------------------------------------------
@@ -21,6 +22,7 @@ Y_VAL = "productivity"
 
 setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
 d <- readRDS(file = paste0("../data/brms_models/", Y_VAL, "_brms_models.rds"))
+# d <- readRDS(file = paste0("../tmp/", Y_VAL, "_brms_models.rds"))
 setwd("../tmp")
 
 
@@ -43,6 +45,7 @@ extract_significances_mainEffect <- function(model_, measure_)
     return(hdi_)
 }
 
+
 extract_significances_treatmentEffect <- function(model_, measure_)
 {
     hdi_ <- bayestestR::hdi(model_) %>%
@@ -60,6 +63,7 @@ extract_significances_treatmentEffect <- function(model_, measure_)
 
     return(hdi_)
 }
+
 
 brm.draw.fits.fun <- function(d_, mainEffect_, treatmentEffect_, measure_)
 {
@@ -101,13 +105,14 @@ brm.draw.fits.fun <- function(d_, mainEffect_, treatmentEffect_, measure_)
                         show.legend = FALSE) +
         scale_linetype_manual(values = c("twodash", "solid")) +
         facet_grid(. ~ Stage) +
+        ylim(NA, 110) +
         labs(x = paste0("Realized ", measure_),
              y = paste0("Total ", Y_VAL),
              color = "Planted species\nrichness") +
         scale_color_viridis_d() +
         scale_fill_brewer(palette = "Greys") +
         theme_bw(16) +
-        theme(aspect.ratio = 1)
+        theme(aspect.ratio = 0.618)
 
     return(p)
 }
@@ -128,56 +133,53 @@ walk(.x = unique(d$measure),
              p.list <- (d %>% filter(measure == .x))$fitted_plot
 
              p <- cowplot::plot_grid(plotlist = map(.x = p.list,
-                                                    .f = ~ {
-                                                        .x + theme(legend.position="none")
-                                                    }),
-                                     labels = c("Adam", "Lindsay", "IBC-grass", "PPA", "TROLL", "Björn"),
-                                     # labels = c("C2018", "T2013", "M2009", "R2020", "M2017", "R2006"),
+                                                    .f = ~ .x + theme(legend.position = "none")),
+                                     labels = c("C2018", "T2013", "M2009", "R2020", "M2017", "R2006"),
                                      ncol = 2,
                                      nrow = ceiling(length(p.list) / 2))
 
              legend <- get_legend(p.list[[1]])
 
-             p.legend <- cowplot::plot_grid(p, legend, rel_widths = c(4, 0.66))
+             p.legend <- cowplot::plot_grid(p, legend, rel_widths = c(2.472, 0.20))
 
              cowplot::save_plot(p.legend,
                                 filename = paste0(Y_VAL, "_fitted_", .x, ".png"),
                                 ncol = 4,
                                 nrow = length(p.list) / 2,
-                                base_asp = 1.1)
+                                base_asp = 1.618)
          }
 )
 
 
-# ---------------------------------------------------------------------------------------------
-# Trait plots
-
-# Load all the model results
-setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
-d <- readRDS(file = "brms_models_FDis_perTrait.rds")
-setwd("../../tmp")
-
-# Generate plots
-d <- d %>%
-    mutate(plot = pmap(.l = list(data, mainEffect, treatmentEffect, measure),
-                       .f = ~ brm.draw.fits.fun(..1, ..2, ..3, ..4)))
-
-# Save trait plots
-pwalk(.l = expand_grid(unique(d$measure),
-                       unique(d$Model)),
-      .f = ~
-          {
-              p.list <- d %>% filter(measure == .x, Model == .y)
-
-              p <- cowplot::plot_grid(plotlist = p.list$plot,
-                                      ncol = 1,
-                                      nrow = nrow(p.list),
-                                      labels = p.list$trait)
-
-              cowplot::save_plot(p,
-                                 filename = paste(.y, "_", .x, "_singleTraits.png", sep = ""),
-                                 ncol = 1,
-                                 nrow = nrow(p.list),
-                                 limitsize = FALSE)
-          }
-)
+# # ---------------------------------------------------------------------------------------------
+# # Trait plots
+#
+# # Load all the model results
+# setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
+# d <- readRDS(file = "brms_models_FDis_perTrait.rds")
+# setwd("../../tmp")
+#
+# # Generate plots
+# d <- d %>%
+#     mutate(plot = pmap(.l = list(data, mainEffect, treatmentEffect, measure),
+#                        .f = ~ brm.draw.fits.fun(..1, ..2, ..3, ..4)))
+#
+# # Save trait plots
+# pwalk(.l = expand_grid(unique(d$measure),
+#                        unique(d$Model)),
+#       .f = ~
+#           {
+#               p.list <- d %>% filter(measure == .x, Model == .y)
+#
+#               p <- cowplot::plot_grid(plotlist = p.list$plot,
+#                                       ncol = 1,
+#                                       nrow = nrow(p.list),
+#                                       labels = p.list$trait)
+#
+#               cowplot::save_plot(p,
+#                                  filename = paste(.y, "_", .x, "_singleTraits.png", sep = ""),
+#                                  ncol = 1,
+#                                  nrow = nrow(p.list),
+#                                  limitsize = FALSE)
+#           }
+# )

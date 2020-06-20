@@ -11,8 +11,8 @@ bootstrap_N = 2500
 # ---------------------------------------------------------------------------------------------
 # Focal ecosystem function
 
-# Y_VAL = "biomass"
-Y_VAL = "productivity"
+Y_VAL = "biomass"
+# Y_VAL = "productivity"
 
 
 # ---------------------------------------------------------------------------------------------
@@ -46,19 +46,21 @@ bootstrap.pearsons <- pearsons %>%
     group_by(Model, Ninitial, Stage) %>%
     nest() %>%
     mutate(cors = map(.x = data,
-                      .f = ~ {
-                          bootstraps <- .x %>% rsample::bootstraps(times = bootstrap_N)
+                      .f = ~
+                          {
+                              bootstraps <- .x %>% rsample::bootstraps(times = bootstrap_N)
 
-                          bootstraps <- bootstraps %>%
-                              mutate(r = map_dbl(.x = splits,
-                                                 .f = ~ {
-                                                     .x <- as.data.frame(.x)
-                                                     return(cor(.x[[paste0("monoculture.", Y_VAL)]], .x[[str_to_title(Y_VAL)]]))
-                                                 }),
-                                     id = row_number())
+                              bootstraps <- bootstraps %>%
+                                  mutate(r = map_dbl(.x = splits,
+                                                     .f = ~ {
+                                                         .x <- as.data.frame(.x)
+                                                         return(cor(.x[[paste0("monoculture.", Y_VAL)]],
+                                                                    .x[[str_to_title(Y_VAL)]]))
+                                                     }),
+                                         id = row_number())
 
-                          return(bootstraps)
-                      })) %>%
+                              return(bootstraps)
+                          })) %>%
     unnest(cors) %>%
     select(Ninitial, Stage, id, Model, r)
 
@@ -68,10 +70,8 @@ bootstrap.pearsons <- pearsons %>%
 
 setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
 estimates <- readRDS(file = paste0("../data/brms_models/", Y_VAL, "_brms_models.rds"))
+# estimates <- readRDS(file = paste0("../tmp/", Y_VAL, "_brms_models.rds"))
 setwd("../tmp")
-
-# estimates <- estimates %>%
-# filter(measure == "Shannon")
 
 # Main effects
 main.effects <- estimates %>%
@@ -79,25 +79,28 @@ main.effects <- estimates %>%
 
 bootstrap.main.estimate <- main.effects %>%
     mutate(bootstrap.estimate = map(.x = mainEffect,
-                                    .f = ~ {
-                                        id = seq(1, bootstrap_N)
+                                    .f = ~
+                                        {
+                                            id = seq(1, bootstrap_N)
 
-                                        estimates_ <- posterior_samples(.x, paste0(":", measure)) %>%
-                                            sample_n(bootstrap_N,
-                                                     replace = TRUE)
+                                            estimates_ <- posterior_samples(.x, paste0(":", measure)) %>%
+                                                sample_n(bootstrap_N,
+                                                         replace = TRUE)
 
-                                        estimates_ <- cbind(estimates_, id)
+                                            estimates_ <- cbind(estimates_, id)
 
-                                        estimates_ <- estimates_ %>%
-                                            pivot_longer(cols = -id,
-                                                         names_to = "term",
-                                                         values_to = "estimate") %>%
-                                            mutate(Stage = ifelse(str_detect(term, "metacommunity"), "metacommunity", "isolation"),
-                                                   Stage = factor(Stage, levels = c("metacommunity", "isolation"))) %>%
-                                            select(Stage, id, estimate)
+                                            estimates_ <- estimates_ %>%
+                                                pivot_longer(cols = -id,
+                                                             names_to = "term",
+                                                             values_to = "estimate") %>%
+                                                mutate(Stage = ifelse(str_detect(term, "metacommunity"), "metacommunity", "isolation"),
+                                                       Stage = factor(Stage, levels = c("metacommunity", "isolation")))
 
-                                        return(estimates_)
-                                    })) %>%
+                                            estimates_ <- estimates_ %>%
+                                                select(Stage, id, estimate)
+
+                                            return(estimates_)
+                                        })) %>%
     unnest(bootstrap.estimate)
 
 bootstrap.main.effect <- inner_join(bootstrap.pearsons %>% filter(Ninitial == 32),
@@ -112,29 +115,30 @@ treatment.effects <- estimates %>%
 
 bootstrap.treatment.estimates <- treatment.effects %>%
     mutate(bootstrap.estimates = map(.x = treatmentEffect,
-                                     .f = ~ {
-                                         id = seq(1, bootstrap_N)
+                                     .f = ~
+                                         {
+                                             id = seq(1, bootstrap_N)
 
-                                         estimates_ <- posterior_samples(.x, paste0(":", measure)) %>%
-                                             sample_n(bootstrap_N,
-                                                      replace = TRUE)
+                                             estimates_ <- posterior_samples(.x, paste0(":", measure)) %>%
+                                                 sample_n(bootstrap_N,
+                                                          replace = TRUE)
 
-                                         estimates_ <- cbind(estimates_, id)
+                                             estimates_ <- cbind(estimates_, id)
 
-                                         estimates_ <- estimates_ %>%
-                                             pivot_longer(cols = -id,
-                                                          names_to = "term",
-                                                          values_to = "estimate") %>%
-                                             mutate(Stage = ifelse(str_detect(term, "metacommunity"), "metacommunity", "isolation"),
-                                                    Stage = factor(Stage, levels = c("metacommunity", "isolation"))) %>%
-                                             mutate(Ninitial = str_extract(term, "\\d+"),
-                                                    Ninitial = factor(Ninitial, levels = c("2", "4", "8", "16", "32")))
+                                             estimates_ <- estimates_ %>%
+                                                 pivot_longer(cols = -id,
+                                                              names_to = "term",
+                                                              values_to = "estimate") %>%
+                                                 mutate(Stage = ifelse(str_detect(term, "metacommunity"), "metacommunity", "isolation"),
+                                                        Stage = factor(Stage, levels = c("metacommunity", "isolation"))) %>%
+                                                 mutate(Ninitial = str_extract(term, "\\d+"),
+                                                        Ninitial = factor(Ninitial, levels = c("2", "4", "8", "16", "32")))
 
-                                         estimates_ <- estimates_ %>%
-                                             select(Stage, Ninitial, id, estimate)
+                                             estimates_ <- estimates_ %>%
+                                                 select(Stage, Ninitial, id, estimate)
 
-                                         return(estimates_)
-                                     })) %>%
+                                             return(estimates_)
+                                         })) %>%
     unnest(bootstrap.estimates)
 
 bootstrap.treatment.effect <- inner_join(bootstrap.pearsons, bootstrap.treatment.estimates) %>%
@@ -185,27 +189,24 @@ main.points <- bootstrap.main.effect %>%
 main.effect.conf.int <- bootstrap.main.effect %>%
     ungroup() %>%
     select(measure, Stage, id, Intercept, Slope) %>%
-    group_by(Stage) %>%
+    group_by(measure, Stage) %>%
     arrange(Intercept) %>%
     mutate(ci_group = dplyr::ntile(Intercept, n = 25))
 
 main.effect.conf.int <- main.effect.conf.int %>%
     group_by(measure, Stage, ci_group) %>%
     nest() %>%
-    mutate(mean = map(.x = data,
-                      .f = ~ {
-                          intercept.mean = mean(.x$Intercept)
-                          return(data.frame(intercept.mean))
-                      })) %>%
+    mutate(intercept.mean = map_dbl(.x = data, .f = ~ mean(.x$Intercept))) %>%
     mutate(ci = map(.x = data,
-                    .f = ~ {
-                        .x %>%
-                            infer::specify(response = Slope) %>%
-                            infer::generate(reps = 1000, type = "bootstrap") %>%
-                            infer::calculate(stat = "mean") %>%
-                            infer::get_confidence_interval(level = 0.95, type = "percentile")
-                    })) %>%
-    unnest(c(mean, ci))
+                    .f = ~
+                        {
+                            .x %>%
+                                infer::specify(response = Slope) %>%
+                                infer::generate(reps = 1000, type = "bootstrap") %>%
+                                infer::calculate(stat = "mean") %>%
+                                infer::get_confidence_interval(level = 0.95, type = "percentile")
+                        })) %>%
+    unnest(ci)
 
 main.effect.conf.int <- main.effect.conf.int %>%
     group_by(measure, Stage) %>%
@@ -219,7 +220,7 @@ main.effect.conf.int <- main.effect.conf.int %>%
     group_by(measure, Stage, X) %>%
     summarise(Y_min = min(Y_min), Y_max = max(Y_max))
 
-no.slope.lines <- main.points %>%
+main.effect.no.slope.lines <- main.points %>%
     group_by(measure, Stage) %>%
     summarise(mean.estimate = mean(estimate))
 
@@ -232,7 +233,7 @@ walk(.x = unique(estimates$measure),
              main.effect.conf.int__ <- main.effect.conf.int %>%
                  filter(measure == .x)
 
-             no.slope.lines__ <- no.slope.lines %>%
+             main.effect.no.slope.lines__ <- main.effect.no.slope.lines %>%
                  filter(measure == .x)
 
              a <- ggplot() +
@@ -247,13 +248,13 @@ walk(.x = unique(estimates$measure),
                                            ymax = Y_max),
                              fill = "darkgrey",
                              alpha = 0.66) +
-                 geom_hline(data = no.slope.lines__,
+                 geom_hline(data = main.effect.no.slope.lines__,
                             mapping = aes(yintercept = mean.estimate),
                             linetype = 3) +
                  facet_grid(cols = vars(Stage)) +
                  labs(x = paste0("Pearson's r, monoculture ", Y_VAL, " and ", Y_VAL, " in 32-species mixture"),
-                      y = paste0("Model estimate, effect of diversity on ", Y_VAL)) +
-                 scale_color_viridis_d() +
+                      y = paste0("Effect of realized diversity on ", Y_VAL)) +
+                 scale_color_viridis_d(labels = c("C2018", "R2006", "M2009", "T2013", "R2020", "M2017")) +
                  guides(colour = guide_legend(override.aes = list(alpha = 1))) +
                  theme_bw(11) +
                  theme(aspect.ratio = 1); a
@@ -283,11 +284,7 @@ treatment.effect.conf.int <- bootstrap.treatment.effect %>%
 treatment.effect.conf.int <- treatment.effect.conf.int %>%
     group_by(measure, Ninitial, Stage, ci_group) %>%
     nest() %>%
-    mutate(mean = map(.x = data,
-                      .f = ~ {
-                          intercept.mean = mean(.x$Intercept)
-                          return(data.frame(intercept.mean))
-                      })) %>%
+    mutate(intercept.mean = map_dbl(.x = data, .f = ~ mean(.x$Intercept))) %>%
     mutate(ci = map(.x = data,
                     .f = ~ {
                         .x %>%
@@ -296,7 +293,7 @@ treatment.effect.conf.int <- treatment.effect.conf.int %>%
                             infer::calculate(stat = "mean") %>%
                             infer::get_confidence_interval(level = 0.95, type = "percentile")
                     })) %>%
-    unnest(c(mean, ci))
+    unnest(ci)
 
 treatment.effect.conf.int <- treatment.effect.conf.int %>%
     group_by(measure, Stage, Ninitial,) %>%
@@ -310,7 +307,7 @@ treatment.effect.conf.int <- treatment.effect.conf.int %>%
     group_by(measure, Stage, Ninitial, X) %>%
     summarise(Y_min = min(Y_min), Y_max = max(Y_max))
 
-no.slope.lines <- treatment.points %>%
+treatment.effect.no.slope.lines <- treatment.points %>%
     group_by(measure, Stage, Ninitial) %>%
     summarise(mean.estimate = mean(estimate))
 
@@ -324,7 +321,7 @@ walk(.x = unique(estimates$measure),
              treatment.effect.conf.int__ <- treatment.effect.conf.int %>%
                  filter(measure == .x)
 
-             no.slope.lines__ <- no.slope.lines %>%
+             treatment.effect.no.slope.lines__ <- treatment.effect.no.slope.lines %>%
                  filter(measure == .x)
 
              b <- ggplot() +
@@ -339,14 +336,14 @@ walk(.x = unique(estimates$measure),
                                            ymax = Y_max),
                              fill = "darkgrey",
                              alpha = 0.66) +
-                 geom_hline(data = no.slope.lines__,
+                 geom_hline(data = treatment.effect.no.slope.lines__,
                             mapping = aes(yintercept = mean.estimate),
                             linetype = 3) +
                  facet_grid(cols = vars(Stage),
                             rows = vars(Ninitial)) +
                  labs(x = paste0("Pearson's r, monoculture ", Y_VAL, " and ", Y_VAL, " in mixture"),
-                      y = paste0("Model estimate, effect of diversity on ", Y_VAL)) +
-                 scale_color_viridis_d() +
+                      y = paste0("Effect of realized diversity on ", Y_VAL)) +
+                 scale_color_viridis_d(labels = c("C2018", "R2006", "M2009", "T2013", "R2020", "M2017")) +
                  guides(colour = guide_legend(override.aes = list(alpha = 1))) +
                  theme_bw(14) +
                  theme(aspect.ratio = 1); b
