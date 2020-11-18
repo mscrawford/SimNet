@@ -92,57 +92,6 @@ FD_fun <- function(d_)
     return(data.frame(FDis = d_.FD$FDis))
 }
 
-# Calculate functional diversity on a per trait basis
-FD_per_trait_fun <- function(d_)
-{
-    d_ <- d_ %>%
-        select(-Productivity)
-
-    d_ <- d_ %>%
-        filter(Biomass > 0) %>%
-        arrange(SpeciesID)
-
-    d_.SpeciesID <- d_ %>%
-        select(SpeciesID)
-
-    d_.traits <- d_ %>%
-        select(-Biomass,
-               -SpeciesID)
-
-    d_.community <- d_ %>%
-        select(SpeciesID, Biomass) %>%
-        spread(SpeciesID, Biomass)
-
-    # If the trait did not vary along this axis, retain these traits ...
-    d_.FD.noVariation <- keep(.x = d_.traits,
-                              .p = ~ length(unique(.x)) == 1)
-
-    # And make stubs that indicate they had no functional dispersion
-    d_.FD.noVariation.simplified <- map_df(.x = d_.FD.noVariation,
-                                           .f = ~ data.frame(FDis = 0),
-                                           .id = "trait")
-
-    # Remove any specific traits that don't have variation in them, as they will break dbFD
-    d_.FD.filtered <- purrr::discard(.x = d_.traits,
-                                     .p = ~ length(unique(.x)) == 1)
-
-    # Run dbFD on each trait within each community
-    d_.FD <- map(.x = d_.FD.filtered,
-                 .f = ~ dbFD(x = as.data.frame(.x) %>%
-                                 cbind(d_.SpeciesID) %>%
-                                 column_to_rownames("SpeciesID"),
-                             a = as.data.frame(d_.community),
-                             w.abun = TRUE)
-    )
-
-    # Combine the newly returned dbFD data.frames into one dataframe with "trait" as an identifier
-    d_.FD.simplified <- map_df(.x = d_.FD,
-                               .f = ~ data.frame(FDis = .x$FDis),
-                               .id = "trait")
-
-    return(bind_rows(d_.FD.noVariation.simplified, d_.FD.simplified))
-}
-
 # Calculate Shannon diversity, richness, and total biomass
 BEF_fun <- function(d_)
 {
@@ -177,19 +126,19 @@ d <- map(.x = models,
                      select(-data) %>%
                      unnest(c(FD, BEF))
 
-                 .x <- .x %>%
-                     group_by(Model) %>%
+                 .x <- .x %>% # Standardizing all of the communities to the highest community biomass within each model
+                     ungroup() %>%
                      mutate(biomass = (biomass / max(biomass)) * 100,
                             productivity = (productivity / max(productivity)) * 100)
              }) %>%
     bind_rows() %>%
-    tbl_df()
+    as_tibble()
 
 d <- d %>%
     group_by(Model) %>%
     nest() %>%
-    expand_grid(measure = c("Shannon", "Richness", "FDis"))
-    # expand_grid(measure = c("Shannon"))
+    # expand_grid(measure = c("Shannon", "Richness", "FDis"))
+    expand_grid(measure = c("Shannon"))
 
 if (!calculate_FD)
 {
@@ -212,47 +161,3 @@ d <- d %>%
 
 # Save all the model results
 saveRDS(d, file = paste0(Y_VAL, "_brms_models.rds"))
-
-
-# # -----------------------------------------------------------------------------------------------
-# # Trait-level FDis dataset ----------------------------------------------------------------------
-#
-# d <- map(.x = models,
-#          .f = ~
-#              {
-#                  .x <- .x %>%
-#                      group_by(Model, Ninitial, Rep, SeedRain, Stage, Year) %>%
-#                      nest()
-#
-#                  .x <- .x %>%
-#                      mutate(FD = map(data, FD_per_trait_fun),
-#                             BEF = map(data, BEF_fun)) %>%
-#                      select(-data) %>%
-#                      unnest(c(FD, BEF))
-#
-#                  .x <- .x %>% filter(Shannon > 1) # Only one species left, so the values will all be NA
-#              }) %>%
-#     bind_rows() %>%
-#     tbl_df()
-#
-# d <- d %>%
-#     group_by(Model, trait) %>%
-#     nest() %>%
-#     expand_grid(measure = c("FDis"))
-#
-# # When the measure is "FDis", filter data to remove Ninitial == 1
-# d <- d %>%
-#     mutate(data = ifelse(measure == "FDis",
-#                          map(.x = data,
-#                              .f = ~ .x %>% filter(Ninitial != 1)),
-#                          data))
-#
-# # Run brms models
-# d <- d %>%
-#     mutate(mainEffect = pmap(.l = list(data, Model, measure),
-#                              .f = ~ brm_mainEffect_fun(..1, ..2, ..3)),
-#            treatmentEffect = pmap(.l = list(data, Model, measure),
-#                                   .f = ~ brm_treatmentEffect_fun(..1, ..2, ..3)))
-#
-# # Save all the model results
-# saveRDS(d, file = "brms_models_FDis_perTrait.rds")

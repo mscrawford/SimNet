@@ -8,6 +8,7 @@ library(sjPlot)
 library(data.table)
 library(tidyverse)
 library(cowplot)
+library(ggthemes)
 
 
 # ---------------------------------------------------------------------------------------------
@@ -15,6 +16,7 @@ library(cowplot)
 
 Y_VAL = "biomass"
 # Y_VAL = "productivity"
+# Y_VAL = "relative_yield_total"
 
 
 # ---------------------------------------------------------------------------------------------
@@ -36,15 +38,14 @@ extract_significances_mainEffect <- function(model_, measure_)
 
     hdi_ <- hdi_ %>%
         filter(str_detect(Parameter, measure_)) %>%
-        mutate(Stage = ifelse(str_detect(Parameter, "metacommunity"), "metacommunity", "isolation"),
-               Stage = factor(Stage, levels = c("metacommunity", "isolation")))
+        mutate(Stage = ifelse(str_detect(Parameter, "Withseedrain"), "With seed rain", "Without seed rain"),
+               Stage = as.factor(Stage))
 
     hdi_ <- hdi_ %>%
         select(Stage, significant)
 
     return(hdi_)
 }
-
 
 extract_significances_treatmentEffect <- function(model_, measure_)
 {
@@ -53,8 +54,8 @@ extract_significances_treatmentEffect <- function(model_, measure_)
 
     hdi_ <- hdi_ %>%
         filter(str_detect(Parameter, measure_)) %>%
-        mutate(Stage = ifelse(str_detect(Parameter, "metacommunity"), "metacommunity", "isolation"),
-               Stage = factor(Stage, levels = c("metacommunity", "isolation"))) %>%
+        mutate(Stage = ifelse(str_detect(Parameter, "Withseedrain"), "With seed rain", "Without seed rain"),
+               Stage = as.factor(Stage)) %>%
         mutate(Ninitial = str_extract(Parameter, "\\d+"),
                Ninitial = factor(Ninitial, levels = c("2", "4", "8", "16", "32")))
 
@@ -63,7 +64,6 @@ extract_significances_treatmentEffect <- function(model_, measure_)
 
     return(hdi_)
 }
-
 
 brm.draw.fits.fun <- function(d_, mainEffect_, treatmentEffect_, measure_)
 {
@@ -84,35 +84,41 @@ brm.draw.fits.fun <- function(d_, mainEffect_, treatmentEffect_, measure_)
         inner_join(extract_significances_treatmentEffect(treatmentEffect_, measure_))
 
     p <- ggplot() +
+        # geom_hline(yintercept = 0, color = "darkgray") +
         geom_point(data = d_,
                    aes(x = !!measure,
                        y = !!sym(Y_VAL),
                        color = Ninitial),
                    alpha = 0.9) +
+        stat_lineribbon(data = mainEffect,
+                        aes(x = !!measure,
+                            y = .value,
+                            linetype = significant),
+                        alpha = 1,
+                        fill = "lightgray",
+                        .width = c(0.95),
+                        show.legend = FALSE) +
         stat_lineribbon(data = treatmentEffect,
                         aes(x = !!measure,
                             y = .value,
                             color = Ninitial,
                             group = Ninitial,
                             linetype = significant),
-                        alpha = 0.5,
+                        alpha = 0.66,
+                        fill = "lightgray",
+                        .width = c(0.95),
                         show.legend = FALSE) +
-        stat_lineribbon(data = mainEffect,
-                        aes(x = !!measure,
-                            y = .value,
-                            linetype = significant),
-                        alpha = 0.5,
-                        show.legend = FALSE) +
-        scale_linetype_manual(values = c("twodash", "solid")) +
         facet_grid(. ~ Stage) +
-        ylim(NA, 110) +
-        labs(x = paste0("Realized ", measure_),
-             y = paste0("Total ", Y_VAL),
-             color = "Planted species\nrichness") +
         scale_color_viridis_d() +
-        scale_fill_brewer(palette = "Greys") +
-        theme_bw(16) +
-        theme(aspect.ratio = 0.618)
+        scale_linetype_manual(values = c("twodash", "solid"), breaks = c(FALSE, TRUE)) +
+        ylim(NA, 110) +
+        labs(x = paste0("Realized ", measure),
+             y = paste0("Total ", Y_VAL),
+             # y = paste0("Relative Yield Total"),
+             color = "Planted species\nrichness") +
+        guides(colour = guide_legend(override.aes = list(alpha = 1, size = 3))) +
+        theme_few(18) +
+        theme(aspect.ratio = 0.5)
 
     return(p)
 }
@@ -131,55 +137,22 @@ walk(.x = unique(d$measure),
      .f = ~
          {
              p.list <- (d %>% filter(measure == .x))$fitted_plot
+             p.labels <- (d %>% filter(measure == .x))$Model
 
              p <- cowplot::plot_grid(plotlist = map(.x = p.list,
                                                     .f = ~ .x + theme(legend.position = "none")),
-                                     labels = c("C2018", "T2013", "M2009", "R2020", "M2017", "R2006"),
-                                     ncol = 2,
-                                     nrow = ceiling(length(p.list) / 2))
+                                     labels = p.labels,
+                                     ncol = 1,
+                                     nrow = length(p.list))
 
-             legend <- get_legend(p.list[[1]])
+             legend <- cowplot::get_legend(p.list[[1]])
 
-             p.legend <- cowplot::plot_grid(p, legend, rel_widths = c(2.472, 0.20))
+             p.legend <- cowplot::plot_grid(p, legend, rel_widths = c(2, 0.3))
 
              cowplot::save_plot(p.legend,
                                 filename = paste0(Y_VAL, "_fitted_", .x, ".png"),
-                                ncol = 4,
-                                nrow = length(p.list) / 2,
-                                base_asp = 1.618)
+                                nrow = length(p.list),
+                                ncol = 2,
+                                base_asp = 2)
          }
 )
-
-
-# # ---------------------------------------------------------------------------------------------
-# # Trait plots
-#
-# # Load all the model results
-# setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
-# d <- readRDS(file = "brms_models_FDis_perTrait.rds")
-# setwd("../../tmp")
-#
-# # Generate plots
-# d <- d %>%
-#     mutate(plot = pmap(.l = list(data, mainEffect, treatmentEffect, measure),
-#                        .f = ~ brm.draw.fits.fun(..1, ..2, ..3, ..4)))
-#
-# # Save trait plots
-# pwalk(.l = expand_grid(unique(d$measure),
-#                        unique(d$Model)),
-#       .f = ~
-#           {
-#               p.list <- d %>% filter(measure == .x, Model == .y)
-#
-#               p <- cowplot::plot_grid(plotlist = p.list$plot,
-#                                       ncol = 1,
-#                                       nrow = nrow(p.list),
-#                                       labels = p.list$trait)
-#
-#               cowplot::save_plot(p,
-#                                  filename = paste(.y, "_", .x, "_singleTraits.png", sep = ""),
-#                                  ncol = 1,
-#                                  nrow = nrow(p.list),
-#                                  limitsize = FALSE)
-#           }
-# )

@@ -20,7 +20,8 @@ if (!exists("filterYears"))
 load("adammod_trans_exp_out_HPC.rda")
 
 adam <- datout %>%
-    mutate(Biomass = Productivity)
+    mutate(Biomass = Productivity,
+           Model = "Grass1")
 
 # Adam ran the 64 species simulation too many times
 adam_64 <- adam %>%
@@ -45,7 +46,7 @@ adam <- adam %>%
 
 adam_traits <- read.csv("adammod_trans_exp_speciesdata.csv")
 
-rm(c(datout, adam_64, adam_not64))
+rm(datout, adam_64, adam_not64)
 
 
 # ---------------------------------------------------------------------------------------------
@@ -54,7 +55,8 @@ rm(c(datout, adam_64, adam_not64))
 load("lindsaymod_trans_exp_out_HPC.rda")
 
 lindsay <- datout %>%
-    mutate(Biomass = Productivity)
+    mutate(Biomass = Productivity,
+           Model = "Grass2")
 
 # Adam ran the 64 species simulation too many times
 lindsay_64 <- lindsay %>%
@@ -70,7 +72,7 @@ lindsay <- bind_rows(lindsay_64, lindsay_not64) %>%
 
 lindsay_traits <- read.csv("lindsaymod_trans_exp_speciesdata.csv")
 
-rm(c(datout, lindsay_64, lindsay_not64))
+rm(datout, lindsay_64, lindsay_not64)
 
 
 # ---------------------------------------------------------------------------------------------
@@ -79,12 +81,13 @@ rm(c(datout, lindsay_64, lindsay_not64))
 load("IBC-grass_Table1.rda")
 
 IBC_grass <- d %>%
-    tbl_df() %>%
+    as_tibble() %>%
     select(-SimID, -Stabilization) %>%
     mutate(Productivity = Biomass)
 
 IBC_grass.noNDD <- IBC_grass %>% filter(Model == "IBC_grass.noNDD")
-IBC_grass.NDD <- IBC_grass %>% filter(Model == "IBC_grass.NDD")
+IBC_grass.NDD <- IBC_grass %>% filter(Model == "IBC_grass.NDD") %>%
+    mutate(Model = "Grass3")
 
 IBC_grass_traits <- read.csv("IBC-grass_Table2.csv")
 
@@ -126,9 +129,10 @@ PPA_initialCommunities <- PPA_initialCommunities %>%
 extirpated <- anti_join(PPA_initialCommunities, PPA,
                         by = c("Model", "Ninitial", "Rep", "SeedRain", "SpeciesID", "Stage", "Year"))
 
-PPA <- bind_rows(PPA, extirpated)
+PPA <- bind_rows(PPA, extirpated) %>%
+    mutate(Model = "Forest1")
 
-rm(c(PPA_initialCommunity, extirpated))
+rm(PPA_initialCommunities, extirpated)
 
 
 # ---------------------------------------------------------------------------------------------
@@ -137,7 +141,8 @@ rm(c(PPA_initialCommunity, extirpated))
 troll <- readRDS("TROLL_Table1.rds") %>%
     select(-LineNumber) %>%
     mutate(SpeciesID = as.factor(SpeciesID),
-           SpeciesID = as.numeric(SpeciesID))
+           SpeciesID = as.numeric(SpeciesID)) %>%
+    mutate(Model = "Forest2")
 
 troll_traits <- fread("TROLL_Table2.txt") %>%
     rename(SpeciesID = species_binomial) %>%
@@ -148,9 +153,10 @@ troll_traits <- fread("TROLL_Table2.txt") %>%
 # ---------------------------------------------------------------------------------------------
 # SUCC
 
-succ <- readRDS("bjoern_Table1_averagedSmooth.rds") %>%
+succ <- readRDS("bjoern_Table1_averaged_smooth_NAreplaced0.rds") %>%
     select(-Smooth) %>%
-    ungroup()
+    ungroup() %>%
+    mutate(Model = "Dryland")
 
 succ <- succ %>%
     mutate(Productivity = replace(Productivity, Productivity < 0, 0))
@@ -184,21 +190,18 @@ model_runs <- map(.x = model_runs,
 
                       .x <- .x %>%
                           mutate(Stage = recode(Stage,
-                                                assembly = "metacommunity",
-                                                disassembly = "isolation"))
+                                                assembly = "With seed rain",
+                                                disassembly = "Without seed rain"))
 
-                      .x <- .x %>%
-                          filter(SeedRain %in% c(100))
-
+                      .x <- .x %>% filter(SeedRain %in% c(100))
                       .x$SeedRain <- droplevels(.x$SeedRain)
 
                       if (filterYears)
                       {
-                          .x <- .x %>%
-                              filter(Year %in% c(100, 200))
+                          .x <- .x %>% filter(Year %in% c(100, 200))
                       }
 
-                      tbl_df(.x)
+                      as_tibble(.x)
                   })
 
 model_traits <- list(adam_traits,
