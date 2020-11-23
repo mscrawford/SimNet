@@ -44,7 +44,7 @@ Mirroring the manuscript's central analysis, our models for the across-treatment
 
 
 ****************************************************************************************************
-# Figure 2 - Fishbone pattern
+# Figure 2 - Counter-gradient
 
 ```{r fig-2, out.width = "800px"}
 

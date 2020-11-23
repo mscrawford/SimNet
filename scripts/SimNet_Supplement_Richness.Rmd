@@ -44,7 +44,7 @@ Mirroring `Shannon` diversity in the manuscript, our models for the across-treat
 
 
 ****************************************************************************************************
-# Figure 2 - Fishbone pattern
+# Figure 2 - Counter-gradient
 
 ```{r fig-2, out.width = "800px"}
 
