@@ -1,29 +1,24 @@
 library(data.table)
 
-read_data <- function(data_dir, file_type, verbose = FALSE) {
+read_data <- function(data_dir, file_type)
+{
     main_dir = getwd()
     setwd(data_dir)
 
     files <- list.files(full.names = T)
     files <- files[which(grepl(file_type, files))]
 
-    d <- rbindlist(lapply(files,
-                             FUN = function(files) {
-                                 fread(files,
-                                       header = TRUE,
-                                       stringsAsFactors = TRUE,
-                                       na.strings = "NA",
-                                       strip.white = TRUE,
-                                       data.table = FALSE)
-                             }))
+    d <- bind_rows(map(.x = files,
+                       .f = read_csv, col_names = TRUE, na = "NA", progress = TRUE))
 
     setwd(main_dir)
-    return(tbl_df(d))
+    return(d %>% as_tibble())
 }
 
-combine_data <- function(data_frames, key) {
-    d <- Reduce(function(...) left_join(..., by = key), data_frames)
-    return(d)
+combine_data <- function(df_list, key)
+{
+    purrr::reduce(df_list,
+                  left_join, by = key)
 }
 
 uv <- function(data) {
