@@ -4,7 +4,7 @@
 
 setwd(dirname(rstudioapi::getActiveDocumentContext()$path)); setwd("../")
 base_dir          <- getwd()
-scripts_dir       <- paste0(base_dir, "/scripts")
+scripts_dir       <- paste0(base_dir, "/R")
 tmp_dir           <- paste0(base_dir, "/tmp")
 raw_data_dir      <- paste0(base_dir, "/data/raw")
 model_data_dir    <- paste0(base_dir, "/data/brms_models")
@@ -13,7 +13,7 @@ model_data_dir    <- paste0(base_dir, "/data/brms_models")
 # -------------------------------------------------------------------------
 # Options
 
-READ_CACHE <- TRUE
+READ_CACHE <- FALSE
 SAVE_CACHE <- TRUE
 
 
