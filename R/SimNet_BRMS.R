@@ -8,7 +8,8 @@ library(rstan)
 library(brms)
 
 
-# Options -----------------------------------------------------------------
+# -------------------------------------------------------------------------
+# Options
 
 rstan_options(auto_write = TRUE)
 options(mc.cores = parallel::detectCores())
@@ -17,49 +18,48 @@ options(mc.cores = parallel::detectCores())
 # -------------------------------------------------------------------------
 # Functions
 
-
 # BRMS functions
-brm_acrossEffect_fun <- function(d_, model, measure)
+brm_acrossEffect_fun <- function(d, model, x_val)
 {
     cat("Model: ", model,
-        " | Biodiversity measure: ", measure,
-        " | Function: ", Y_VAL,
+        " | Biodiversity measure: ", x_val,
+        " | Function: ", y_val,
         " | acrossEffect\n",
         sep = "")
 
-    assert_that(is.factor(d_$Stage), msg = "Stage is not a factor.")
+    assert_that(is.factor(d$Stage), msg = "Stage is not a factor.")
 
-    m_ <- brm(formula = paste0(Y_VAL, " ~ -1 + Stage + Stage:", measure),
-              data = d_)
+    m_ <- brm(formula = paste0(y_val, " ~ -1 + Stage + Stage:", x_val),
+              data = d)
 
     return(m_)
 }
 
 
-brm_withinEffect_fun <- function(d_, model, measure)
+brm_withinEffect_fun <- function(d, model, x_val)
 {
     cat("Model: ", model,
-        " | Biodiversity measure: ", measure,
-        " | Function: ", Y_VAL,
+        " | Biodiversity measure: ", x_val,
+        " | Function: ", y_val,
         " | withinEffect\n",
         sep = "")
 
-    d_ <- d_ %>% filter(Ninitial %in% c(2, 4, 8, 16, 32)) # monocultures and 64-species plots have no variation
+    d <- d %>% filter(Ninitial %in% c(2, 4, 8, 16, 32)) # monocultures and 64-species plots have no variation
 
-    assert_that(is.factor(d_$Stage), msg = "Stage is not a factor.")
-    assert_that(is.factor(d_$Ninitial), msg = "Ninitial is not a factor.")
+    assert_that(is.factor(d$Stage), msg = "Stage is not a factor.")
+    assert_that(is.factor(d$Ninitial), msg = "Ninitial is not a factor.")
 
-    m_ <- brm(formula = paste0(Y_VAL, " ~ -1 + Ninitial:Stage + Ninitial:Stage:", measure),
-              data = d_)
+    m_ <- brm(formula = paste0(y_val, " ~ -1 + Ninitial:Stage + Ninitial:Stage:", x_val),
+              data = d)
 
     return(m_)
 }
 
 
 # Calculate Shannon diversity, richness, total biomass, and productivity
-BEF_fun <- function(d_)
+BEF_fun <- function(d)
 {
-    d_ <- d_ %>%
+    d <- d %>%
         filter(Biomass > 0) %>%
         mutate(p_i = Biomass / sum(Biomass)) %>%
         summarise(biomass = sum(Biomass),
@@ -67,49 +67,49 @@ BEF_fun <- function(d_)
                   Shannon = 1 - sum(p_i * log(p_i)),
                   Richness = n())
 
-    return(data.frame(biomass = d_$biomass,
-                      productivity = d_$productivity,
-                      Shannon = d_$Shannon,
-                      Richness = d_$Richness))
+    return(data.frame(biomass = d$biomass,
+                      productivity = d$productivity,
+                      Shannon = d$Shannon,
+                      Richness = d$Richness))
 }
 
 
 # Calculate functional diversity
-FD_fun <- function(d_)
+FD_fun <- function(d)
 {
-    d_ <- d_ %>%
+    d <- d %>%
         select(-Productivity)
 
-    d_ <- d_ %>%
+    d <- d %>%
         filter(Biomass > 0) %>%
         arrange(SpeciesID)
 
     # if there is only one species remaining, it is considered maximally undispersed
-    if (dim(d_)[1] == 1)
+    if (dim(d)[1] == 1)
     {
         return(data.frame(FDis = 0))
     }
 
-    d_.traits <- d_ %>%
+    d.traits <- d %>%
         column_to_rownames("SpeciesID") %>%
         select(-Biomass)
 
-    d_.community <- d_ %>%
+    d.community <- d %>%
         select(SpeciesID, Biomass) %>%
         spread(SpeciesID, Biomass)
 
-    d_.FD <- dbFD(x = as.data.frame(d_.traits),
-                  a = as.data.frame(d_.community),
-                  w.abun = TRUE,
-                  calc.FRic = FALSE,
-                  calc.FDiv = FALSE,
-                  messages = FALSE)
+    d.FD <- dbFD(x = as.data.frame(d.traits),
+                 a = as.data.frame(d.community),
+                 w.abun = TRUE,
+                 calc.FRic = FALSE,
+                 calc.FDiv = FALSE,
+                 messages = FALSE)
 
     if (file.exists("vert.txt")) {
         file.remove("vert.txt")
     }
 
-    return(data.frame(FDis = d_.FD$FDis))
+    return(data.frame(FDis = d.FD$FDis))
 }
 
 
@@ -130,7 +130,7 @@ d <- map(.x = models,
                      nest()
 
                  .x <- .x %>%
-                     mutate(FD = ifelse("FDis" %in% MEASURES, map(data, FD_fun), NA),
+                     mutate(FD = ifelse("FDis" %in% X_VALS, map(data, FD_fun), NA),
                             BEF = map(data, BEF_fun)) %>%
                      select(-data) %>%
                      unnest(c(FD, BEF))
@@ -146,18 +146,18 @@ d <- map(.x = models,
 d <- d %>%
     group_by(Model) %>%
     nest() %>%
-    expand_grid(measure = MEASURES)
+    expand_grid(x_val = X_VALS)
 
-# When the measure is "FDis", filter data to remove Ninitial == 1
+# When the x_val is "FDis", filter data to remove Ninitial == 1
 d <- d %>%
-    mutate(data = ifelse(measure == "FDis",
+    mutate(data = ifelse(x_val == "FDis",
                          map(.x = data,
                              .f = ~ .x %>% filter(Ninitial != 1)),
                          data))
 
 if (SAVE_CACHE)
 {
-    saveRDS(d, file = paste0(tmp_dir, "/cache/", Y_VAL, "_pre_brms_models_CACHED.rds"))
+    saveRDS(d, file = paste0(tmp_dir, "/cache/", y_val, "_pre_brms_models_CACHED.rds"))
 }
 
 
@@ -166,22 +166,22 @@ if (SAVE_CACHE)
 
 if (READ_CACHE)
 {
-    assign("d", readRDS(file = paste0(tmp_dir, "/cache/", Y_VAL, "_pre_brms_models_CACHED.rds")), envir = .GlobalEnv)
+    assign("d", readRDS(file = paste0(tmp_dir, "/cache/", y_val, "_pre_brms_models_CACHED.rds")), envir = .GlobalEnv)
 }
 
 estimates <- d %>%
-    mutate(acrossEffect = pmap(.l = list(data, Model, measure),
+    mutate(acrossEffect = pmap(.l = list(data, Model, x_val),
                                .f = ~ brm_acrossEffect_fun(..1, ..2, ..3)),
-           withinEffect = pmap(.l = list(data, Model, measure),
+           withinEffect = pmap(.l = list(data, Model, x_val),
                                .f = ~ brm_withinEffect_fun(..1, ..2, ..3)))
 
 
 # -------------------------------------------------------------------------
 # Save the brms model results
 
-saveRDS(estimates, file = paste0(tmp_dir, "/", Y_VAL, "_brms_models.rds"))
+saveRDS(estimates, file = paste0(tmp_dir, "/", y_val, "_brms_models.rds"))
 
 if (SAVE_CACHE)
 {
-    saveRDS(estimates, file = paste0(tmp_dir, "/cache/",  Y_VAL, "_brms_models_CACHED.rds"))
+    saveRDS(estimates, file = paste0(tmp_dir, "/cache/",  y_val, "_brms_models_CACHED.rds"))
 }

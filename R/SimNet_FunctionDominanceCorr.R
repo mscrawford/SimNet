@@ -51,8 +51,8 @@ bootstrap.pearsons <- pearsons %>%
                                                      .f = ~
                                                          {
                                                              .x <- as.data.frame(.x)
-                                                             return(cor(.x[[paste0("monoculture.", Y_VAL)]],
-                                                                        .x[[str_to_title(Y_VAL)]]))
+                                                             return(cor(.x[[paste0("monoculture.", y_val)]],
+                                                                        .x[[str_to_title(y_val)]]))
                                                          }),
                                          id = row_number())
 
@@ -63,7 +63,7 @@ bootstrap.pearsons <- pearsons %>%
 
 if (SAVE_CACHE)
 {
-    saveRDS(bootstrap.pearsons, file = paste0(tmp_dir, "/cache/", Y_VAL, "_bootstrap_pearsons_CACHED.rds"))
+    saveRDS(bootstrap.pearsons, file = paste0(tmp_dir, "/cache/", y_val, "_bootstrap_pearsons_CACHED.rds"))
 }
 
 
@@ -72,30 +72,30 @@ if (SAVE_CACHE)
 
 if (READ_CACHE)
 {
-    assign("estimates",          readRDS(file = paste0(tmp_dir, "/cache/", Y_VAL, "_brms_models_CACHED.rds")),        envir = .GlobalEnv)
-    assign("bootstrap.pearsons", readRDS(file = paste0(tmp_dir, "/cache/", Y_VAL, "_bootstrap_pearsons_CACHED.rds")), envir = .GlobalEnv)
+    assign("estimates",          readRDS(file = paste0(tmp_dir, "/cache/", y_val, "_brms_models_CACHED.rds")),        envir = .GlobalEnv)
+    assign("bootstrap.pearsons", readRDS(file = paste0(tmp_dir, "/cache/", y_val, "_bootstrap_pearsons_CACHED.rds")), envir = .GlobalEnv)
 } else if (!exists("estimates")) {
-    assign("estimates",          readRDS(file = paste0(model_data_dir, "/", Y_VAL, "_brms_models.rds")), envir = .GlobalEnv)
+    assign("estimates",          readRDS(file = paste0(model_data_dir, "/", y_val, "_brms_models.rds")), envir = .GlobalEnv)
 }
 
 # across effects
 across.effects <- estimates %>%
-    select(Model, measure, acrossEffect)
+    select(Model, x_val, acrossEffect)
 
 bootstrap.across.estimate <- across.effects %>%
     mutate(bootstrap.estimate = map2(.x = acrossEffect,
-                                     .y = measure,
+                                     .y = x_val,
                                      .f = ~
                                          {
                                              id = seq(1, bootstrap_N)
 
-                                             estimates_ <- posterior_samples(.x, paste0(":", .y)) %>%
+                                             estimates <- posterior_samples(.x, paste0(":", .y)) %>%
                                                  sample_n(bootstrap_N,
                                                           replace = TRUE)
 
-                                             estimates_ <- cbind(estimates_, id)
+                                             estimates <- cbind(estimates, id)
 
-                                             estimates_ <- estimates_ %>%
+                                             estimates <- estimates %>%
                                                  pivot_longer(cols = -id,
                                                               names_to = "parameter",
                                                               values_to = "estimate") %>%
@@ -104,36 +104,36 @@ bootstrap.across.estimate <- across.effects %>%
                                                                        "Without seed inflow"),
                                                         Stage = as.factor(Stage))
 
-                                             estimates_ <- estimates_ %>%
+                                             estimates <- estimates %>%
                                                  select(Stage, id, estimate)
 
-                                             return(estimates_)
+                                             return(estimates)
                                          })) %>%
     unnest(bootstrap.estimate)
 
 bootstrap.across.effect <- inner_join(bootstrap.pearsons,
                                       bootstrap.across.estimate) %>%
     ungroup() %>%
-    select(measure, Model, Stage, id, r, estimate)
+    select(x_val, Model, Stage, id, r, estimate)
 
 # within effects
 within.effects <- estimates %>%
-    select(measure, Model, withinEffect)
+    select(x_val, Model, withinEffect)
 
 bootstrap.within.estimates <- within.effects %>%
     mutate(bootstrap.estimates = map2(.x = withinEffect,
-                                      .y = measure,
+                                      .y = x_val,
                                       .f = ~
                                           {
                                               id = seq(1, bootstrap_N)
 
-                                              estimates_ <- posterior_samples(.x, paste0(":", .y)) %>%
+                                              estimates <- posterior_samples(.x, paste0(":", .y)) %>%
                                                   sample_n(bootstrap_N,
                                                            replace = TRUE)
 
-                                              estimates_ <- cbind(estimates_, id)
+                                              estimates <- cbind(estimates, id)
 
-                                              estimates_ <- estimates_ %>%
+                                              estimates <- estimates %>%
                                                   pivot_longer(cols = -id,
                                                                names_to = "parameter",
                                                                values_to = "estimate") %>%
@@ -144,21 +144,21 @@ bootstrap.within.estimates <- within.effects %>%
                                                   mutate(Ninitial = str_extract(parameter, "\\d+"),
                                                          Ninitial = factor(Ninitial, levels = c("2", "4", "8", "16", "32")))
 
-                                              estimates_ <- estimates_ %>%
+                                              estimates <- estimates %>%
                                                   select(Stage, Ninitial, id, estimate)
 
-                                              return(estimates_)
+                                              return(estimates)
                                           })) %>%
     unnest(bootstrap.estimates)
 
 bootstrap.within.effect <- inner_join(bootstrap.pearsons, bootstrap.within.estimates) %>%
     ungroup() %>%
-    select(measure, Model, Stage, Ninitial, id, r, estimate)
+    select(x_val, Model, Stage, Ninitial, id, r, estimate)
 
 if (SAVE_CACHE)
 {
-    saveRDS(bootstrap.across.effect, file = paste0(tmp_dir, "/cache/", Y_VAL, "_across_effect_CACHED.rds"))
-    saveRDS(bootstrap.within.effect, file = paste0(tmp_dir, "/cache/", Y_VAL, "_within_effect_CACHED.rds"))
+    saveRDS(bootstrap.across.effect, file = paste0(tmp_dir, "/cache/", y_val, "_across_effect_CACHED.rds"))
+    saveRDS(bootstrap.within.effect, file = paste0(tmp_dir, "/cache/", y_val, "_within_effect_CACHED.rds"))
 }
 
 
@@ -167,13 +167,13 @@ if (SAVE_CACHE)
 
 if (READ_CACHE)
 {
-    assign("bootstrap.across.effect", readRDS(file = paste0(tmp_dir, "/cache/", Y_VAL, "_across_effect_CACHED.rds")), envir = .GlobalEnv)
-    assign("bootstrap.within.effect", readRDS(file = paste0(tmp_dir, "/cache/", Y_VAL, "_within_effect_CACHED.rds")), envir = .GlobalEnv)
+    assign("bootstrap.across.effect", readRDS(file = paste0(tmp_dir, "/cache/", y_val, "_across_effect_CACHED.rds")), envir = .GlobalEnv)
+    assign("bootstrap.within.effect", readRDS(file = paste0(tmp_dir, "/cache/", y_val, "_within_effect_CACHED.rds")), envir = .GlobalEnv)
 }
 
 # across effect
 bootstrap.across.effect <- bootstrap.across.effect %>%
-    group_by(measure, Stage, id) %>%
+    group_by(x_val, Stage, id) %>%
     nest() %>%
     mutate(model = map(.x = data,
                        .f = ~ lmodel2::lmodel2(.x$estimate ~ .x$r)))
@@ -185,7 +185,7 @@ regression.across.effect <- bootstrap.across.effect %>%
 
 # within effect
 bootstrap.within.effect <- bootstrap.within.effect %>%
-    group_by(measure, Stage, Ninitial, id) %>%
+    group_by(x_val, Stage, Ninitial, id) %>%
     nest() %>%
     mutate(model = map(.x = data,
                        .f = ~ lmodel2::lmodel2(.x$estimate ~ .x$r)))
@@ -197,8 +197,8 @@ regression.within.effect <- bootstrap.within.effect %>%
 
 if (SAVE_CACHE)
 {
-    saveRDS(regression.across.effect, file = paste0(tmp_dir, "/cache/", Y_VAL, "_regression_across_effect_CACHED.rds"))
-    saveRDS(regression.within.effect, file = paste0(tmp_dir, "/cache/", Y_VAL, "_regression_within_effect_CACHED.rds"))
+    saveRDS(regression.across.effect, file = paste0(tmp_dir, "/cache/", y_val, "_regression_across_effect_CACHED.rds"))
+    saveRDS(regression.within.effect, file = paste0(tmp_dir, "/cache/", y_val, "_regression_within_effect_CACHED.rds"))
 }
 
 
@@ -207,20 +207,20 @@ if (SAVE_CACHE)
 
 if (READ_CACHE)
 {
-    assign("estimates",                readRDS(file = paste0(tmp_dir, "/cache/", Y_VAL, "_brms_models_CACHED.rds")),              envir = .GlobalEnv)
-    assign("regression.across.effect", readRDS(file = paste0(tmp_dir, "/cache/", Y_VAL, "_regression_across_effect_CACHED.rds")), envir = .GlobalEnv)
-    assign("regression.within.effect", readRDS(file = paste0(tmp_dir, "/cache/", Y_VAL, "_regression_within_effect_CACHED.rds")), envir = .GlobalEnv)
+    assign("estimates",                readRDS(file = paste0(tmp_dir, "/cache/", y_val, "_brms_models_CACHED.rds")),              envir = .GlobalEnv)
+    assign("regression.across.effect", readRDS(file = paste0(tmp_dir, "/cache/", y_val, "_regression_across_effect_CACHED.rds")), envir = .GlobalEnv)
+    assign("regression.within.effect", readRDS(file = paste0(tmp_dir, "/cache/", y_val, "_regression_within_effect_CACHED.rds")), envir = .GlobalEnv)
 }
 
 # across effect
 across.points <- regression.across.effect %>%
     ungroup() %>%
-    select(measure, Stage, data) %>%
+    select(x_val, Stage, data) %>%
     unnest(data)
 
 across.points.prediction.interval <- regression.across.effect %>%
-    group_by(measure, Stage) %>%
-    select(measure, Stage, Intercept, Slope) %>%
+    group_by(x_val, Stage) %>%
+    select(x_val, Stage, Intercept, Slope) %>%
     nest() %>%
     mutate(predictions = map(.x = data,
                              .f = ~ {
@@ -228,14 +228,13 @@ across.points.prediction.interval <- regression.across.effect %>%
 
                                  predictions <- expand_grid(lines, X = seq(-0.4, 1, length.out = 100)) %>%
                                      mutate(Y = Slope * X + Intercept)
-
                              })) %>%
     select(-data) %>%
     unnest(predictions)
 
 across.points.prediction.interval <- across.points.prediction.interval %>%
-    group_by(measure, Stage, X) %>%
-    select(measure, Stage, X, Y) %>%
+    group_by(x_val, Stage, X) %>%
+    select(x_val, Stage, X, Y) %>%
     nest() %>%
     mutate(quantiles = map(.x = data,
                            .f = ~ {
@@ -247,7 +246,7 @@ across.points.prediction.interval <- across.points.prediction.interval %>%
     unnest(quantiles)
 
 across.effect.slope.CI <- regression.across.effect %>%
-    group_by(measure, Stage) %>%
+    group_by(x_val, Stage) %>%
     nest() %>%
     mutate(ci = map(.x = data,
                     .f = ~
@@ -261,68 +260,68 @@ across.effect.slope.CI <- regression.across.effect %>%
     select(-data) %>%
     unnest(ci)
 
-walk(.x = unique(estimates$measure),
+walk(.x = unique(estimates$x_val),
      .f = ~
          {
-             across.points__ <- across.points %>%
-                 filter(measure == .x)
+             across.points_ <- across.points %>%
+                 filter(x_val == .x)
 
-             across.points.prediction.interval__ <- across.points.prediction.interval %>%
-                 filter(measure == .x)
+             across.points.prediction.interval_ <- across.points.prediction.interval %>%
+                 filter(x_val == .x)
 
-             across.effect.slope.CI__ <- across.effect.slope.CI %>%
-                 filter(measure == .x) %>%
+             across.effect.slope.CI_ <- across.effect.slope.CI %>%
+                 filter(x_val == .x) %>%
                  mutate(lower_ci = round(lower_ci, digits = 2),
                         upper_ci = round(upper_ci, digits = 2))
 
-             x__ <- across.points.prediction.interval__ %>%
+             x_ <- across.points.prediction.interval_ %>%
                  ungroup() %>%
                  filter(X == max(X)) %>%
                  distinct(X) %>%
                  pull(X)
 
-             y__ <- across.points.prediction.interval__ %>%
+             y_ <- across.points.prediction.interval_ %>%
                  ungroup() %>%
                  filter(ci_lower == min(ci_lower)) %>%
                  distinct(ci_lower) %>%
                  pull(ci_lower)
 
-             across.effect.slope.CI__ <- across.effect.slope.CI__ %>%
-                 mutate(x_max = x__,
-                        y_min = y__)
+             across.effect.slope.CI_ <- across.effect.slope.CI_ %>%
+                 mutate(x_max = x_,
+                        y_min = y_)
 
-             across.points.corr__ <- across.points__ %>%
+             across.points.corr_ <- across.points_ %>%
                  group_by(Stage) %>%
                  summarise(corr = round(cor(r, estimate), digits = 2)) %>%
-                 mutate(x_max = x__,
-                        y_min = y__)
+                 mutate(x_max = x_,
+                        y_min = y_)
 
              a <- ggplot() +
                  geom_hline(yintercept = 0, color = "darkgray") +
                  geom_vline(xintercept = 0, color = "darkgray") +
-                 geom_point(data = across.points__,
+                 geom_point(data = across.points_,
                             mapping = aes(x = r,
                                           y = estimate,
                                           color = Model),
                             alpha = 0.10) +
                  scale_color_brewer(palette = "Dark2") +
-                 geom_ribbon(data = across.points.prediction.interval__,
+                 geom_ribbon(data = across.points.prediction.interval_,
                              mapping = aes(x = X,
                                            ymin = ci_lower,
                                            ymax = ci_upper),
                              fill = "darkgrey",
                              alpha = 0.66) +
                  scale_fill_brewer(palette = "Greys") +
-                 geom_line(data = across.points.prediction.interval__,
+                 geom_line(data = across.points.prediction.interval_,
                            mapping = aes(x = X,
                                          y = ci_mid),
                            color = "#3E5EF1") +
-                 geom_text(data = across.effect.slope.CI__,
+                 geom_text(data = across.effect.slope.CI_,
                            mapping = aes(x = x_max,
                                          y = y_min,
                                          label = paste0("95% CI of slope: [", lower_ci, ", ", upper_ci, "]")),
                            hjust = 1) +
-                 geom_text(data = across.points.corr__,
+                 geom_text(data = across.points.corr_,
                            mapping = aes(x = x_max,
                                          y = y_min,
                                          label = paste0("Pearson's correlation: ", corr)),
@@ -336,7 +335,7 @@ walk(.x = unique(estimates$measure),
                  theme(aspect.ratio = 0.618)
 
              cowplot::save_plot(a,
-                                filename = paste0(tmp_dir, "/", Y_VAL, "_acrossEffects_", .x, ".png"),
+                                filename = paste0(tmp_dir, "/", y_val, "_acrossEffects_", .x, ".png"),
                                 ncol = 2,
                                 nrow = 1,
                                 base_asp = 1.75)
@@ -347,12 +346,12 @@ walk(.x = unique(estimates$measure),
 # within effect
 within.points <- regression.within.effect %>%
     ungroup() %>%
-    select(measure, Stage, Ninitial, data) %>%
+    select(x_val, Stage, Ninitial, data) %>%
     unnest(data)
 
 within.points.prediction.interval <- regression.within.effect %>%
-    group_by(measure, Ninitial, Stage) %>%
-    select(measure, Ninitial, Stage, Intercept, Slope) %>%
+    group_by(x_val, Ninitial, Stage) %>%
+    select(x_val, Ninitial, Stage, Intercept, Slope) %>%
     nest() %>%
     mutate(predictions = map(.x = data,
                              .f = ~
@@ -366,8 +365,8 @@ within.points.prediction.interval <- regression.within.effect %>%
     unnest(predictions)
 
 within.points.prediction.interval <- within.points.prediction.interval %>%
-    select(measure, Ninitial, Stage, X, Y) %>%
-    group_by(measure, Ninitial, Stage, X) %>%
+    select(x_val, Ninitial, Stage, X, Y) %>%
+    group_by(x_val, Ninitial, Stage, X) %>%
     nest() %>%
     mutate(quantiles = map(.x = data,
                            .f = ~
@@ -380,7 +379,7 @@ within.points.prediction.interval <- within.points.prediction.interval %>%
     unnest(quantiles)
 
 within.effect.slope.CI <- regression.within.effect %>%
-    group_by(measure, Ninitial, Stage) %>%
+    group_by(x_val, Ninitial, Stage) %>%
     nest() %>%
     mutate(ci = map(.x = data,
                     .f = ~
@@ -394,69 +393,69 @@ within.effect.slope.CI <- regression.within.effect %>%
     select(-data) %>%
     unnest(ci)
 
-measures <- unique(estimates$measure)
-measures <- measures[measures != "Richness"] # Richness has no variation, so the plot is meaningless
-walk(.x = measures,
+x_vals <- unique(estimates$x_val)
+x_vals <- x_vals[x_vals != "Richness"] # Richness has no variation, so the plot is meaningless
+walk(.x = x_vals,
      .f = ~
          {
-             within.points__ <- within.points %>%
-                 filter(measure == .x)
+             within.points_ <- within.points %>%
+                 filter(x_val == .x)
 
-             within.points.prediction.interval__ <- within.points.prediction.interval %>%
-                 filter(measure == .x)
+             within.points.prediction.interval_ <- within.points.prediction.interval %>%
+                 filter(x_val == .x)
 
-             within.effect.slope.CI__ <- within.effect.slope.CI %>%
-                 filter(measure == .x) %>%
+             within.effect.slope.CI_ <- within.effect.slope.CI %>%
+                 filter(x_val == .x) %>%
                  mutate(lower_ci = round(lower_ci, digits = 2),
                         upper_ci = round(upper_ci, digits = 2))
 
-             x__ <- within.points.prediction.interval__ %>%
+             x_ <- within.points.prediction.interval_ %>%
                  ungroup() %>%
                  filter(X == min(X)) %>%
                  distinct(X) %>%
                  pull(X)
 
-             y__ <- within.points__ %>%
+             y_ <- within.points_ %>%
                  ungroup() %>%
                  filter(estimate == min(estimate)) %>%
                  distinct(estimate) %>%
                  pull(estimate)
 
-             within.effect.slope.CI__ <- within.effect.slope.CI__ %>%
-                 mutate(x_min = x__,
-                        y_min = y__)
+             within.effect.slope.CI_ <- within.effect.slope.CI_ %>%
+                 mutate(x_min = x_,
+                        y_min = y_)
 
-             within.points.corr__ <- within.points__ %>%
+             within.points.corr_ <- within.points_ %>%
                  group_by(Stage, Ninitial) %>%
                  summarise(corr = round(cor(r, estimate), digits = 2)) %>%
-                 mutate(x_min = x__,
-                        y_min = y__)
+                 mutate(x_min = x_,
+                        y_min = y_)
 
              p <- ggplot() +
                  geom_hline(yintercept = 0, color = "darkgray") +
                  geom_vline(xintercept = 0, color = "darkgray") +
-                 geom_point(data = within.points__,
+                 geom_point(data = within.points_,
                             mapping = aes(x = r,
                                           y = estimate,
                                           color = Model),
                             alpha = 0.10) +
-                 geom_ribbon(data = within.points.prediction.interval__,
+                 geom_ribbon(data = within.points.prediction.interval_,
                              mapping = aes(x = X,
                                            ymin = ci_lower,
                                            ymax = ci_upper),
                              fill = "darkgrey",
                              alpha = 0.66) +
-                 geom_line(data = within.points.prediction.interval__,
+                 geom_line(data = within.points.prediction.interval_,
                            mapping = aes(x = X,
                                          y = ci_mid),
                            color = "#9f140f",
                            size = 1) +
-                 geom_text(data = within.effect.slope.CI__,
+                 geom_text(data = within.effect.slope.CI_,
                            mapping = aes(x = x_min,
                                          y = y_min,
                                          label = paste0("95% CI of slope: [", lower_ci, ", ", upper_ci, "]")),
                            hjust = 0) +
-                 geom_text(data = within.points.corr__,
+                 geom_text(data = within.points.corr_,
                            mapping = aes(x = x_min,
                                          y = y_min,
                                          label = paste0("Pearson's correlation: ", corr)),
@@ -474,7 +473,7 @@ walk(.x = measures,
                        legend.key.size = unit(0.75, "cm"))
 
              cowplot::save_plot(p,
-                                filename = paste0(tmp_dir, "/", Y_VAL, "_withinEffects_", .x, ".png"),
+                                filename = paste0(tmp_dir, "/", y_val, "_withinEffects_", .x, ".png"),
                                 ncol = 2,
                                 nrow = 5,
                                 base_asp = 1.75)

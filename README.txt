@@ -6,7 +6,7 @@ ABOUT
 
 INSTRUCTIONS
 
-	To reproduce the analysis associated with the Crawford, Berry et al. 2021, source the
+	To reproduce the analysis associated with the Crawford, Berry et al. (2021), source the
 	runscript (R/SimNet_Runscript.R), within RStudio or hard code the
 	'base_dir' to the outermost directory of this analysis. You will need
 	to ensure that you have all the required packages installed on your machine
@@ -17,7 +17,7 @@ INSTRUCTIONS
 	caching functionality (see Runscript.R).
 
 	All output is placed within the tmp folder. The final datasets - including
-	the derived `brms` models - are contained in the data folder. 
+	the derived `brms` models used in our analysis - are contained in the data folder. 
 
 
 LICENSE

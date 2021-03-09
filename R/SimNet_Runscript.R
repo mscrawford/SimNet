@@ -1,3 +1,4 @@
+library(tidyverse)
 
 # -------------------------------------------------------------------------
 # Directories
@@ -18,24 +19,23 @@ SAVE_CACHE <- TRUE
 
 
 # -------------------------------------------------------------------------
-# Focal biodiversity metrics
+# Focal metrics
 
-# MEASURES <- c("Shannon", "Richness", "FDis")
-MEASURES <- c("Shannon")
+# X_VALS <- c("Shannon", "Richness", "FDis")
+X_VALS <- c("Shannon")
+
+# Y_VALS <- c("biomass", "productivity")
+Y_VALS <- c("biomass")
+
 
 # -------------------------------------------------------------------------
-# Run scripts
+# Run analysis
 
-# Derive dataset and plots for biomass
-Y_VAL = "biomass"
-source(paste0(scripts_dir, "/SimNet_ReadModels.R"))
-source(paste0(scripts_dir, "/SimNet_BRMS.R"))
-source(paste0(scripts_dir, "/SimNet_BRMS_derivePlots.R"))
-source(paste0(scripts_dir, "/SimNet_Correlations_vs_Estimates.R"))
-
-# Derive dataset and plots for productivity
-Y_VAL = "productivity"
-source(paste0(scripts_dir, "/SimNet_ReadModels.R"))
-source(paste0(scripts_dir, "/SimNet_BRMS.R"))
-source(paste0(scripts_dir, "/SimNet_BRMS_derivePlots.R"))
-source(paste0(scripts_dir, "/SimNet_Correlations_vs_Estimates.R"))
+purrr::walk(.x = Y_VALS,
+            .f = ~ {
+                assign(x = "y_val", value = .x, envir = .GlobalEnv)
+                source(paste0(scripts_dir, "/SimNet_ReadModels.R"))
+                source(paste0(scripts_dir, "/SimNet_BRMS.R"))
+                source(paste0(scripts_dir, "/SimNet_BRMS_derivePlots.R"))
+                source(paste0(scripts_dir, "/SimNet_FunctionDominanceCorr.R"))
+            })

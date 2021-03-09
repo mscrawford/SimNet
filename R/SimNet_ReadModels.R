@@ -28,12 +28,8 @@ adam <- bind_rows(adam_64, adam_not64) %>%
 
 # Remove all species with inappreciable biomass
 adam <- adam %>%
-    mutate(Biomass = ifelse(Biomass < 1,
-                            0,
-                            Biomass),
-           Productivity = ifelse(Productivity < 1,
-                                 0,
-                                 Productivity))
+    mutate(Biomass      = ifelse(Biomass < 1, 0, Biomass),
+           Productivity = ifelse(Productivity < 1, 0, Productivity))
 
 adam_traits <- read.csv("adammod_trans_exp_speciesdata.csv")
 
@@ -111,9 +107,7 @@ PPA_initialCommunities <- PPA_initialCommunities %>%
     expand_grid(SeedRain = unique(PPA$SeedRain), # I only ran scenarios with these levels of seed rain
                 Year = seq(1, 200)) %>%
     mutate(Model = "PPA",
-           Stage = ifelse(Year > 100,
-                          "disassembly",
-                          "assembly"),
+           Stage = ifelse(Year > 100, "disassembly", "assembly"),
            Biomass = 0,
            Productivity = 0)
 
