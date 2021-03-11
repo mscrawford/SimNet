@@ -119,7 +119,7 @@ FD_fun <- function(d)
 # Read prepared simulation datasets
 if (!exists("models"))
 {
-    source(paste0(scripts_dir, "/SimNet_ReadModels.R"))
+    source(paste0(scripts_dir, "/readModels.R"))
 }
 
 d <- map(.x = models,

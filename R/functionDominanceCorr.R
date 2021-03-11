@@ -19,7 +19,7 @@ bootstrap_N = 2500
 
 if (!exists("model_runs"))
 {
-    source(paste0(scripts_dir, "/SimNet_ReadModels.R"))
+    source(paste0(scripts_dir, "/readModels.R"))
 }
 
 pearsons <- model_runs %>%

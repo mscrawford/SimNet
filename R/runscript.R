@@ -34,8 +34,8 @@ Y_VALS <- c("biomass")
 purrr::walk(.x = Y_VALS,
             .f = ~ {
                 assign(x = "y_val", value = .x, envir = .GlobalEnv)
-                source(paste0(scripts_dir, "/SimNet_ReadModels.R"))
-                source(paste0(scripts_dir, "/SimNet_BRMS.R"))
-                source(paste0(scripts_dir, "/SimNet_BRMS_derivePlots.R"))
-                source(paste0(scripts_dir, "/SimNet_FunctionDominanceCorr.R"))
+                source(paste0(scripts_dir, "/readModels.R"))
+                source(paste0(scripts_dir, "/BRMS.R"))
+                source(paste0(scripts_dir, "/BRMS_plots.R"))
+                source(paste0(scripts_dir, "/functionDominanceCorr.R"))
             })
