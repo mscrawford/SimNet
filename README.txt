@@ -3,6 +3,10 @@ ABOUT
 
 	This code was written by Michael S. Crawford, for the journal article:
 
+	Crawford, M., K. Barry, A. Clark, C. Farrior, J. Hines, E. Ladouceur, J. Lichstein, I. Marechaux, 
+	F. May, B. Reineking, L. Turnbull, C. Wirth, and N. Rüger. 2021. The function-dominance correlation drives 
+	the direction and strength of biodiversity-ecosystem functioning relationships. Ecology Letters.
+
 
 INSTRUCTIONS
 

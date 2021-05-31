@@ -1,0 +1,596 @@
+---
+title: "Understanding patterns of species abundance and persistence in PPA"
+output: 
+    html_document:
+        toc: true
+        toc_float: true
+        number_section: true
+        highlight: zenburn
+knit: (function(inputFile, encoding) 
+        {
+          rmarkdown::render(inputFile, encoding = encoding, output_dir = "markdowns") 
+        }
+      )
+---
+
+<style>
+pre {
+  overflow-x: auto;
+}
+pre code {
+  word-wrap: normal;
+  white-space: pre;
+}
+</style>
+
+```{r setup, include=FALSE}
+
+options(width = 1000)
+
+knitr::opts_chunk$set(echo = TRUE,
+                      warning = FALSE,
+                      message = FALSE,
+                      fig.height = 4,
+                      fig.width = 8,
+                      size = "small") 
+
+library(data.table)
+library(tidyverse)
+library(ggthemes)
+library(gganimate)
+library(viridis) 
+library(cowplot)
+library(scales)
+library(plotly)
+library(randomForest)
+library(pdp)
+
+```
+
+```{r load-data, echo=FALSE, message=FALSE, warning=FALSE}
+
+filterYears <- FALSE
+
+setwd("/Users/Theodore/Documents/Dropbox/Work/Projects/SimNet/Modelling_Experiment/scripts")
+source("./SimNet_ReadModels.R")
+setwd("../tmp")
+
+PPA <- models[["PPA"]] %>%
+    select(-Model, -SeedRain)
+
+```
+
+In this document, I examine how a species' performance in mixture depends on 1) its monoculture biomass
+and 2) its trait values. To measure performance in mixture, I use two indices: 1) total biomass and 2)
+time to extinction.
+
+## Monoculture biomass in relation to trait values
+
+First, a facetted plot of the relationship between each species' trait values and its corresponding
+monoculture biomass. 
+
+```{r monoculture-biomass-vs-traits, echo=TRUE, warning=FALSE, message=FALSE}
+
+PPA.monocultures <- PPA %>% tbl_df() %>%
+    filter(Ninitial == 1,
+           Year == 200) %>%
+    rename(monoculture.biomass = Biomass) %>%
+    select(-Ninitial, -Stage, -Year, -Rep) %>%
+    pivot_longer(c(-SpeciesID, -monoculture.biomass),
+                 names_to = "trait", 
+                 values_to = "trait.value")
+
+ggplot(PPA.monocultures) +
+    geom_point(aes(x = trait.value,
+                   y = monoculture.biomass,
+                   color = SpeciesID)) +
+    facet_wrap(facets = vars(trait),
+               ncol = 4,
+               scales = "free_x") +
+    labs(x = "Trait value",
+         y = "Monoculture biomass") +
+    theme_bw() +
+    theme(aspect.ratio = 1,
+          legend.position = "none")
+
+```
+
+PC2score has a much more clear relationship with monoculture biomass at the end of the simulation 
+than PC1score.
+
+A more concise plot, incorporating both PCA scores into one facet.
+
+```{r monoculture-biomass-vs-traits-single-facet, echo=TRUE, warning=FALSE, message=FALSE}
+
+PPA.monocultures <- PPA %>%
+    filter(Ninitial == 1,
+           Year == 200) %>%
+    select(-Ninitial, -Stage, -Year, -Rep)
+
+ggplot(PPA.monocultures) +
+    geom_point(aes(x = PC1score, 
+                   y = PC2score,
+                   color = Biomass),
+               size = 3) +
+    scale_color_viridis() +
+    labs(color = "Monoculture\nbiomass") +
+    theme_bw() +
+    theme(aspect.ratio = 1)
+
+```  
+
+The relationship between PC1score and PC2score in driving monoculture biomass production is nonlinear.
+Although maximizing PC2score seems to be predictive of a high monoculture biomass, species with moderately
+high PC1scores potentially produce more biomass than species of identical PC2scores but even higher PC1scores.
+
+# Competitive ability in mixture vs. monoculture biomass
+
+I now shift focus towards understanding how a species' competitive ability - its ability to produce 
+biomass, or persist within the community - changes with its position in trait space. To do so, I use 
+first the 32-species mixtures and then the 64-species mixture. 
+
+## 32-species mixtures
+
+### Species' biomass in 32-species mixture vs. their biomass in monoculture
+
+For these first few graphs, I include the biomass measurements in the last step of the metacommunity 
+stage - with seed addition - as well. 
+
+```{r 32-species-biomass-vs-monoculture-biomass, echo=TRUE, warning=FALSE, message=FALSE}
+
+PPA.monocultures <- PPA %>%
+    filter(Ninitial == 1,
+           Year %in% c(100, 200)) %>%
+    rename(monoculture.biomass = Biomass) %>%
+    select(-Ninitial, -Year, -Rep) 
+
+PPA.32 <- PPA %>%
+    filter(Ninitial == 32,
+           Year %in% c(100, 200)) %>%
+    select(SpeciesID, Stage, Biomass, PC1score, PC2score)
+
+PPA.combined <- inner_join(PPA.monocultures, PPA.32)
+
+ggplot(PPA.combined) +
+    geom_point(aes(x = monoculture.biomass,
+                   y = Biomass,
+                   color = SpeciesID)) +
+    facet_grid(cols = vars(Stage)) +
+    labs(x = "Monoculture biomass",
+         y = "Biomass in 32-species mixture") +
+    theme_bw() + 
+    theme(aspect.ratio = 1,
+          legend.position = "none")
+
+```
+
+Within 32-species communities, a truly low monoculture biomass does not tend to translate into biomass
+in mixture. However, several of the most fit species within mixture are those with moderate levels
+of biomass in monoculture. There is a large degree of variation in the biomass in mixture for many of 
+the species.
+
+### Species' biomass in 32-species mixture vs. its traits, disentangled
+
+Now I shift towards understanding how these patterns of biomass production in mixture stem from the
+species' underlying traits.
+
+```{r 32-species-biomass-vs-traits, echo=TRUE, warning=FALSE, message=FALSE}
+
+PPA.32 <- PPA %>%
+    filter(Ninitial == 32,
+           Year %in% c(100, 200)) %>%
+    select(SpeciesID, Stage, Biomass, PC1score, PC2score)
+
+PPA.32 <- PPA.32 %>%
+    pivot_longer(c(-SpeciesID, -Stage, -Biomass),
+                 names_to = "trait",
+                 values_to = "trait.value")
+
+ggplot(PPA.32) +
+    geom_point(aes(x = trait.value,
+                   y = Biomass,
+                   color = SpeciesID)) +
+    facet_grid(cols = vars(Stage),
+               rows = vars(trait)) +
+    labs(x = "Trait value",
+         y = "Biomass in 32-species mixture") +
+    theme_bw() +
+    theme(aspect.ratio = 1,
+          legend.position = "none")
+
+```
+
+It is difficult to derive consistent takeaways from this plot. It seems that species with high
+trait values on the second PCA axis are competitively dominant.
+
+### Species' biomass in 32-species mixture vs. its traits
+
+To sharpen the comparison between species' traits and their in-mixture biomass production, I tie 
+both traits to plot axes and biomass production to the color of the points.
+
+```{r 32-species-biomass-vs-traits-3D, echo=TRUE, warning=FALSE, message=FALSE}
+
+PPA.32 <- PPA %>%
+    filter(Ninitial == 32,
+           Year %in% c(100, 200)) %>%
+    group_by(SpeciesID, Stage, PC1score, PC2score) %>%
+    summarise(Biomass = mean(Biomass)) %>%
+    filter(Biomass > 0)
+
+a <- ggplot(PPA.32) +
+    geom_point(aes(x = PC1score,
+                   y = PC2score,
+                   color = log(Biomass)),
+               size = 4) +
+    facet_grid(cols = vars(Stage)) +
+    scale_color_viridis() +
+    labs(color = "Biomass") +
+    theme_bw() +
+    theme(aspect.ratio = 1)
+
+```
+
+Here, it becomes apparent that within the community mixtures, those species that maximize both 
+PCA axes are those that dominate the community. Indeed, the competitive dominant within the simulation has the
+highest summed trait values.
+
+### Time to extinction in 32-species mixture vs. biomass in monoculture
+
+```{r 32-species-TTE-vs-monocuture-biomass, echo=TRUE, warning=FALSE, message=FALSE}
+
+PPA.monocultures <- PPA %>%
+    filter(Ninitial == 1,
+           Year == 200) %>%
+    rename(monoculture.biomass = Biomass) %>%
+    select(SpeciesID, monoculture.biomass) 
+
+PPA.32 <- PPA %>%
+    filter(Ninitial == 32)
+
+PPA.32 <- PPA.32 %>%
+    group_by(SpeciesID, Rep) %>%
+    arrange(Year) %>%
+    mutate(isDead = (Biomass == 0)) %>%
+    filter(isDead | (!isDead & Year == max(Year))) %>%
+    filter(Year == first(Year))
+
+PPA.combined <- inner_join(PPA.monocultures, PPA.32)
+
+ggplot(PPA.combined) +
+    geom_point(aes(x = monoculture.biomass,
+                   y = Year, 
+                   color = SpeciesID)) +
+    labs(x = "Monoculture biomass",
+         y = "Extinction year") +
+    theme_bw() +
+    theme(aspect.ratio = 1,
+          legend.position = "none")
+
+```
+
+Generally species, species with high monoculture biomasses persist for the longest duration of time.
+However, this is a great degree of variation within this pattern.
+
+### Time to extinction in 32-species mixture vs. traits
+
+```{r 32-species-TTE-vs-traits, echo=TRUE, warning=FALSE, message=FALSE}
+
+PPA.32 <- PPA %>%
+    filter(Ninitial == 32)
+
+PPA.32 <- PPA.32 %>%
+    group_by(SpeciesID, Rep) %>%
+    arrange(Year) %>%
+    mutate(isDead = (Biomass == 0)) %>%
+    filter(isDead | (!isDead & Year == max(Year))) %>%
+    filter(Year == first(Year))
+
+PPA.32 <- PPA.32 %>%
+    group_by(SpeciesID, PC1score, PC2score) %>%
+    summarise(Year = mean(Year))
+
+PPA.32 <- PPA.32 %>%
+    pivot_longer(c(-SpeciesID, -Year),
+                 names_to = "trait",
+                 values_to = "trait.value")
+
+ggplot(PPA.32) +
+    geom_point(aes(x = trait.value,
+                   y = Year,
+                   color = SpeciesID)) +
+    geom_hline(yintercept = 100, 
+               linetype = 3) +
+    facet_wrap(facets = vars(trait),
+               ncol = 4,
+               scales = "free") +
+    labs(x = "Trait value",
+         y = "Time to extinction") +
+    theme_bw() +
+    theme(aspect.ratio = 1,
+          legend.position = "none")
+
+```
+
+While there is a linear relationship between PC2score and extinction time, the relationship between 
+PC1score is more complex. The most striking result of this graph is that species with very low PC1scores
+are extirpated almost immediately after seed addition is turned off (the dashed line), regardless of their PC2score. 
+After this filter, it appears that the relationship between time to extinction and PC1score is somewhat linear, 
+with higher trait values seeing longer persistance times within the community. 
+
+Again, I put both trait axes into one facet to sharpen the comparison.
+
+```{r 32-species-TTE-vs-traits-3D, echo=TRUE, warning=FALSE, message=FALSE}
+
+PPA.32 <- PPA %>%
+    filter(Ninitial == 32)
+
+PPA.32 <- PPA.32 %>%
+    group_by(SpeciesID, Rep) %>%
+    arrange(Year) %>%
+    mutate(isDead = (Biomass == 0)) %>%
+    filter(isDead | (!isDead & Year == max(Year))) %>%
+    filter(Year == first(Year))
+
+PPA.32 <- PPA.32 %>%
+    group_by(SpeciesID, PC1score, PC2score) %>%
+    summarise(Year = mean(Year))
+
+b <- ggplot(PPA.32) +
+    geom_point(aes(x = PC1score,
+                   y = PC2score,
+                   color = Year),
+               size = 4) +
+    labs(color = "Extinction year") +
+    scale_color_viridis() +
+    theme_bw() +
+    theme(aspect.ratio = 1)
+
+cowplot::plot_grid(a, b, nrow = 2, labels = c("A", "B"))
+
+```
+
+The relationship between extinction time and the two trait axes looks almost identical to that of 
+biomass production and trait values.
+
+### Contextualizing the importance of traits in monoculture and mixture
+
+In the following section, I train two random forests, one on the monoculture dataset and the other on the
+32-species mixture dataset. I compare relative importance of the two trait axes within these
+two contexts, and then use the two random forests to predict biomass across a range of trait values
+to show how the fitness of different trait combinations changes based on context.
+
+In both random forests, because the algorithm is "data hungry," I use the last 20 years of data (e.g., 
+I feed it years 180 - 200). I incorporate `Year` as a predictor variable in both, to ensure that it does 
+not bias the results. However, since random forests are a nonparametric tool, they should be robust to 
+any underlying autocorrelation in the biomass dataset.
+
+```{r monoculture-biomass-vs-traits-randomForest-varImp, echo=TRUE, warning=FALSE, message=FALSE}
+
+PPA.monocultures <- PPA %>%
+    filter(Ninitial == 1,
+           Year %in% seq(180, 200)) %>%
+    mutate(id = row_number()) %>%
+    mutate_if(is.character, as.factor) %>%
+    select(-SpeciesID, -Ninitial, -Stage, -Rep) 
+
+train <- PPA.monocultures %>% sample_frac(.70)
+test <- anti_join(PPA.monocultures, train, by = 'id')
+
+train <- train %>% select(-id)
+test <- test %>% select(-id)
+
+rf.monocultures <- randomForest(data = as.data.frame(train),
+                                Biomass ~ .,
+                                importance = TRUE)
+
+pred <- data.frame(pred = predict(rf.monocultures, test))
+title = paste("correlation: ", round(cor(pred, test$Biomass)[[1]], 2),
+              "  |  mean squared error: ", round(mean(rf.monocultures$mse), 2),
+              "  |  R-squared: ", round(mean(rf.monocultures$rsq), 2),
+              sep = "")
+
+varImpPlot(rf.monocultures, main = title)
+
+```
+
+In determining monoculture biomass, PC2score is considerably more important than PC1score. Year is
+a poor predictor of total biomass, so I trust that autocorrelation in time does not significantly bias
+the importance values of the two PCA axes and predictions of the results.
+
+Note that in the above variable importance plot, the correlation between the testing dataset's realized
+monoculture biomasses and the random forest's predictions of this biomass is nearly 1. The pseudo R-squared
+of the random forest regression model is also nearly 1. This indicates that patterns in monoculture biomass 
+production in the PPA model can be entirely explained by the two traits. This confirmation of intuition
+suggests that the random forest is doing its job correctly.
+
+Now, I use a random forest on the 32-species mixtures to see how the importance of the two trait axes
+change in competition.
+
+```{r mixture-biomass-vs-traits-randomForest-varImp, echo=TRUE, warning=FALSE, message=FALSE}
+
+PPA.32 <- PPA %>%
+    filter(Ninitial == 32,
+           Year %in% seq(180, 200)) %>%
+    mutate(id = row_number()) %>%
+    mutate_if(is.character, as.factor) %>%
+    select(-SpeciesID, -Ninitial, -Stage, -Rep) 
+
+train <- PPA.32 %>% sample_frac(.70)
+test <- anti_join(PPA.32, train, by = 'id')
+
+train <- train %>% select(-id)
+test <- test %>% select(-id)
+
+rf.32 <- randomForest(data = as.data.frame(train),
+                      Biomass ~ .,
+                      importance = TRUE)
+
+pred <- data.frame(pred = predict(rf.32, test))
+title = paste("correlation: ", round(cor(pred, test$Biomass)[[1]], 2),
+              "  |  mean squared error: ", round(mean(rf.32$mse), 2),
+              "  |  R-squared: ", round(mean(rf.32$rsq), 2),
+              sep = "")
+
+varImpPlot(rf.32, main = title)
+
+```
+
+The relative importance of PC1score increases dramatically, indicating that while relatively unimportant for
+monoculture biomass production, the first PCA axis becomes critical for determining total biomass 
+within the context of a community.
+
+Note the decline in both correlation with the testing dataset and the psuedo R-squared. This suggests that
+within a community context, interactions between species within the community add variation to the emergent
+biomass per species. Because the random forest is simply looking at the species' traits, it cannot fully 
+capture the variation in biomass production that is caused by interactions within the community. In other 
+words, based on which species are included in a given initial community, a species may have higher or lower biomass.
+
+Now, I will predict the biomass production of species as monocultures and in mixture based on where
+they lie in trait space.
+
+```{r biomass-vs-traits-randomForest-predictions, echo=TRUE, warning=FALSE, message=FALSE}
+
+grid <- expand_grid(PC1score = seq(min(PPA$PC1score), max(PPA$PC1score), length.out = 50),
+                    PC2score = seq(min(PPA$PC2score), max(PPA$PC2score), length.out = 50),
+                    Year = 200)
+
+grid$`Monoculture biomass` <- stats::predict(rf.monocultures, grid)
+grid$`Mixture biomass` <- stats::predict(rf.32, grid)
+
+grid <- grid %>%
+    group_by(PC1score, PC2score) %>%
+    pivot_longer(c(-PC1score, -PC2score, -Year),
+                 names_to = "treatment", 
+                 values_to = "biomass")
+
+grid$treatment <- fct_relevel(grid$treatment, 
+                              "Monoculture biomass", "Mixture biomass")
+
+# Derive plots
+ggplot(grid) +
+    geom_tile(aes(x = PC1score,
+                  y = PC2score,
+                  fill = biomass)) +
+    facet_grid(cols = vars(treatment)) +
+    scale_fill_viridis() +
+    labs(fill = "Predicted\nbiomass") +
+    theme_bw() +
+    theme(aspect.ratio = 1)
+
+```
+
+This plot puts into relief the shift in importance for the first PCA axis. In monocultures, the dominant
+determinant of total biomass is the second PCA axis; while species with PC1scores near zero tend to have
+higher monoculture biomasses than those with very low PC1scores (e.g. -4), even these low PC1scores have 
+considerable monoculture biomasses. However, in mixture, the first PCA axis becomes critical in 
+determining competitive ability, and the highest biomass achieving trait combination shifts towards 
+higher PC1scores.
+
+An important caviate:
+
+> Using the random forest to extrapolate the biomass production of trait combinations that are not present 
+> in the original set of species should be taken with a grain of salt. For example, the species with the
+> highest level of biomass production in mixture maximizes both trait axes. This pattern is not seen in
+> the random forest's predictions: Instead, very high, but not maximized, values from PC1 are dominant.
+> This is an artifact, rather than a reality. I could improve this this methodology
+> by using partial dependency plots and constraining the algorithm to not extrapolate outside of the 
+> convex hull of data points.
+
+****************************************************************************************************
+
+## 64-species mixture
+
+### Biomass in the 64-species mixture vs. monoculture biomass
+
+To understand how these dynamics change with seed addition, I incorporate the `metacommunity` phase
+into the following analysis of 64-species mixtures. During the `metacommunity` phase, seed addition is
+present.
+
+```{r 64-species-biomass-vs-monoculture-biomass, echo=TRUE, warning=FALSE, message=FALSE}
+
+PPA.monocultures <- PPA %>%
+    filter(Ninitial == 1,
+           Year %in% c(100, 200)) %>%
+    rename(monoculture.biomass = Biomass) %>%
+    select(-Ninitial, -Year, -Rep) 
+    
+PPA.mixture <- PPA %>%
+    filter(Ninitial == 64,
+           Year %in% c(100, 200)) %>%
+    rename(mixture.biomass = Biomass) %>%
+    select(-Ninitial, -Year, -Rep) 
+
+PPA.combined <- inner_join(PPA.monocultures, PPA.mixture)
+
+ggplot(PPA.combined) +
+    geom_point(aes(x = monoculture.biomass,
+                   y = mixture.biomass,
+                   color = SpeciesID)) +
+    facet_grid(cols = vars(Stage)) +
+    labs(x = "Monoculture biomass",
+         y = "Mixture biomass") + 
+    theme_bw() +
+    theme(aspect.ratio = 1,
+          legend.position = "none")
+
+```
+
+### Biomass in the 64-species mixture vs. traits over time
+
+This plot is animated to show how the species within the 64-species mixture are thinned over time.
+The size of each point is relative to its biomass, while the color is its species identity.
+
+```{r 64-species-biomass-vs-traits-over-time, echo=TRUE, warning=FALSE, message=FALSE}
+
+PPA.64 <- PPA %>%
+    filter(Ninitial == 64)
+
+ggplot(PPA.64) +
+    geom_point(aes(x = PC1score,
+                   y = PC2score,
+                   color = SpeciesID,
+                   size = Biomass)) +
+    scale_colour_discrete(guide = FALSE) +
+    transition_time(Year) +
+    theme_bw() +
+    theme(aspect.ratio = 1)
+
+```
+
+### Time to extinction in 64-species mixture vs. monoculture biomass
+
+And now, again, the time to extinction.
+
+```{r 64-species-TTE-vs-monoculture-biomass, echo=TRUE, warning=FALSE, message=FALSE}
+
+PPA.monocultures <- PPA %>%
+    filter(Ninitial == 1,
+           Year == 200) %>%
+    rename(monoculture.biomass = Biomass) %>%
+    select(-Ninitial, -Year, -Rep) 
+    
+PPA.64 <- PPA %>%
+    filter(Ninitial == 64) %>%
+    select(-Ninitial, -Rep)
+
+PPA.64 <- PPA.64 %>%
+    group_by(SpeciesID) %>%
+    arrange(Year) %>%
+    mutate(isDead = (Biomass == 0)) %>%
+    filter(isDead | (!isDead & Year == max(Year))) %>%
+    filter(Year == first(Year))
+    
+PPA.combined <- inner_join(PPA.monocultures, PPA.64)
+
+ggplot(PPA.combined) +
+    geom_point(aes(x = monoculture.biomass,
+                   y = Year,
+                   color = SpeciesID)) +
+    labs(x = "Monoculture biomass",
+         y = "Extinction year") +
+    theme_bw() +
+    theme(aspect.ratio = 1,
+          legend.position = "none")
+
+```
+

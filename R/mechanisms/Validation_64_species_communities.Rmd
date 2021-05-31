@@ -1,0 +1,536 @@
+---
+title: "Pearson's correlations"
+output: 
+    html_document:
+        toc: true
+        toc_float: true
+        number_section: true
+        fig_width: 7
+        fig_height: 4
+knit: (function(inputFile, encoding) 
+        {
+          rmarkdown::render(inputFile, encoding = encoding, output_dir = "markdowns") 
+        }
+      )
+---
+
+<style>
+pre 
+{
+    overflow-x: auto;
+}
+pre code 
+{
+    word-wrap: normal;
+    white-space: pre;
+}
+</style>
+
+```{r setup, include=FALSE}
+
+options(width = 1000)
+
+library(tidyverse)
+
+knitr::opts_chunk$set(echo = FALSE,
+                      warning = FALSE,
+                      message = FALSE,
+                      size = "small",
+                      dev = "png") 
+
+setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
+source("SimNet_ReadModels.R")
+
+models <- model_runs %>%
+    bind_rows() %>%
+    select(-SeedRain, -Year, -Productivity)
+
+models.mono <- models %>%
+    filter(Ninitial == 1) %>%
+    rename(monoculture.biomass = Biomass) %>%
+    ungroup() %>%
+    select(-Ninitial, -Rep)
+
+models <- inner_join(models, models.mono) %>%
+    filter(Ninitial != 1,
+           Model != "IBC_grass.noNDD")
+
+models$Ninitial <- droplevels(models$Ninitial)
+
+```
+
+This document describes the Pearson's correlation within each model between the species' monoculture biomasses and their biomasses within the 32-species mixtures during both seed addition phases. 
+
+
+****************************************************************************************************
+# Grass1
+
+<i> Clark, A.T., C. Lehman, and D. Tilman. 2018. Identifying mechanisms that structure ecological communities by snapping model parameters to empirically observed trade-offs. Ecology Letters 21:494–505. </i>
+
+```{r Grass1-setup, include=FALSE}
+
+Grass1 <- models %>%
+    filter(Model == "adam") %>%
+    select(-Model)
+
+```
+
+## 64-species mixture
+
+Initially, to demonstrate the broader competitive hierarchy within the model, we plot the biomass of all species within the 64-species treatment, during the terminal time step of both the metacommunity and isolation phases.
+
+```{r Grass1-plot-64}
+
+ggplot(Grass1 %>% filter(Ninitial == 64))  +
+    geom_point(aes(x = monoculture.biomass,
+                   y = Biomass,
+                   color = SpeciesID),
+               show.legend = FALSE) +
+    facet_grid(cols = vars(Stage)) +
+    scale_color_viridis_d() +
+    labs(x = "Monoculture biomass",
+         y = "Biomass in mixture") +
+    theme_bw()
+
+```
+
+```{r Grass1-select-32, include=FALSE}
+
+Grass1 <- Grass1 %>%
+    filter(Ninitial == 32)
+
+```
+
+## 32-species mixture
+
+We now plot the relationship between a species' monoculture biomass and its biomass within the 32-species mixture dataset to visualize the intent of this part of the analysis. There are 64 mixtures (i.e. replicate plots) within the richness treatment. Each color is a distinct species, and each point is a species' biomass within one mixture.
+
+```{r Grass1-plot}
+
+ggplot(Grass1)  +
+    geom_point(aes(x = monoculture.biomass,
+                   y = Biomass,
+                   color = SpeciesID),
+               show.legend = FALSE) +
+    facet_grid(cols = vars(Stage)) +
+    scale_color_viridis_d() +
+    labs(x = "Monoculture biomass",
+         y = "Biomass in mixture") +
+    theme_bw()
+
+```
+
+```{r Grass1-correlation}
+
+Grass1.corr <- Grass1 %>%
+    group_by(Ninitial, Stage) %>%
+    summarise(corr = cor(Biomass, monoculture.biomass))
+
+Grass1.corr <- Grass1.corr %>%
+    pivot_wider(names_from = Stage, values_from = corr)
+
+knitr::kable(Grass1.corr, 
+             caption = "Correlation between monoculture and mixture biomass",
+             col.names = c("Planted species richness", "Metacommunity", "Isolation"), 
+             align = 'r',
+             format = "html", 
+             digits = 3) %>%
+    kableExtra::kable_styling(bootstrap_options = c("striped", "hover", "condensed"),
+                              full_width = F)
+
+```
+
+
+****************************************************************************************************
+# Grass2
+
+<i> Turnbull, L. A., J. M. Levine, M. Loreau, and A. Hector. 2013. Coexistence, niches and biodiversity effects on ecosystem functioning. Ecology Letters 16:116–127. </i> 
+
+```{r Grass2-setup, include=FALSE}
+
+Grass2 <- models %>%
+    filter(Model == "lindsay") %>%
+    select(-Model)
+
+```
+
+## 64-species mixture
+
+Initially, to demonstrate the broader competitive hierarchy within the model, we plot the biomass of all species within the 64-species treatment, during the terminal time step of both the metacommunity and isolation phases.
+
+```{r Grass2-plot-64}
+
+ggplot(Grass2 %>% filter(Ninitial == 64))  +
+    geom_point(aes(x = monoculture.biomass,
+                   y = Biomass,
+                   color = SpeciesID),
+               show.legend = FALSE) +
+    facet_grid(cols = vars(Stage)) +
+    scale_color_viridis_d() +
+    labs(x = "Monoculture biomass",
+         y = "Biomass in mixture") +
+    theme_bw()
+
+```
+
+```{r Grass2-select-32, include=FALSE}
+
+Grass2 <- Grass2 %>%
+    filter(Ninitial == 32)
+
+```
+
+## 32-species mixture
+
+We now plot the relationship between a species' monoculture biomass and its biomass within the 32-species mixture dataset to visualize the intent of this part of the analysis. There are 64 mixtures (i.e. replicate plots) within the richness treatment. Each color is a distinct species, and each point is a species' biomass within one mixture.
+
+```{r Grass2-plot}
+
+ggplot(Grass2)  +
+    geom_point(aes(x = monoculture.biomass,
+                   y = Biomass,
+                   color = SpeciesID),
+               show.legend = FALSE) +
+    facet_grid(cols = vars(Stage)) +
+    scale_color_viridis_d() +
+    labs(x = "Monoculture biomass",
+         y = "Biomass in mixture") +
+    theme_bw()
+
+```
+
+```{r Grass2-correlation}
+
+Grass2.corr <- Grass2 %>%
+    group_by(Ninitial, Stage) %>%
+    summarise(corr = cor(Biomass, monoculture.biomass))
+
+Grass2.corr <- Grass2.corr %>%
+    pivot_wider(names_from = Stage, values_from = corr)
+
+knitr::kable(Grass2.corr, 
+             caption = "Correlation between monoculture and mixture biomass",
+             col.names = c("Planted species richness", "Metacommunity", "Isolation"), 
+             align = 'r',
+             format = "html", 
+             digits = 3) %>%
+    kableExtra::kable_styling(bootstrap_options = c("striped", "hover", "condensed"),
+                              full_width = F)
+
+```
+
+
+****************************************************************************************************
+# Grass3
+
+<i> May, F., V. Grimm, and F. Jeltsch. 2009. Reversed effects of grazing on plant diversity: The role of below-ground competition and size symmetry. Oikos 118:1830–1843. </i> 
+
+```{r Grass3-setup, include=FALSE}
+
+Grass3 <- models %>%
+    filter(Model == "IBC_grass.NDD") %>%
+    select(-Model)
+
+```
+
+## 64-species mixture
+
+Initially, to demonstrate the broader competitive hierarchy within the model, we plot the biomass of all species within the 64-species treatment, during the terminal time step of both the metacommunity and isolation phases.
+
+```{r Grass3-plot-64}
+
+ggplot(Grass3 %>% filter(Ninitial == 64))  +
+    geom_point(aes(x = monoculture.biomass,
+                   y = Biomass,
+                   color = SpeciesID),
+               show.legend = FALSE) +
+    facet_grid(cols = vars(Stage)) +
+    scale_color_viridis_d() +
+    labs(x = "Monoculture biomass",
+         y = "Biomass in mixture") +
+    theme_bw()
+
+```
+
+```{r Grass3-select-32, include=FALSE}
+
+Grass3 <- Grass3 %>%
+    filter(Ninitial == 32)
+
+```
+
+## 32-species mixture
+
+We now plot the relationship between a species' monoculture biomass and its biomass within the 32-species mixture dataset to visualize the intent of this part of the analysis. There are 64 mixtures (i.e. replicate plots) within the richness treatment. Each color is a distinct species, and each point is a species' biomass within one mixture.
+
+```{r Grass3-plot}
+
+ggplot(Grass3)  +
+    geom_point(aes(x = monoculture.biomass,
+                   y = Biomass,
+                   color = SpeciesID),
+               show.legend = FALSE) +
+    facet_grid(cols = vars(Stage)) +
+    scale_color_viridis_d() +
+    labs(x = "Monoculture biomass",
+         y = "Biomass in mixture") +
+    theme_bw()
+
+```
+
+```{r Grass3-correlation}
+
+Grass3.corr <- Grass3 %>%
+    group_by(Ninitial, Stage) %>%
+    summarise(corr = cor(Biomass, monoculture.biomass))
+
+Grass3.corr <- Grass3.corr %>%
+    pivot_wider(names_from = Stage, values_from = corr)
+
+knitr::kable(Grass3.corr, 
+             caption = "Correlation between monoculture and mixture biomass",
+             col.names = c("Planted species richness", "Metacommunity", "Isolation"), 
+             align = 'r',
+             format = "html", 
+             digits = 3) %>%
+    kableExtra::kable_styling(bootstrap_options = c("striped", "hover", "condensed"),
+                              full_width = F)
+
+```
+
+
+****************************************************************************************************
+# Forest1
+
+<i> Rüger, N., R. Condit, D. H. Dent, S. J. DeWalt, S. P. Hubbell, J. W. Lichstein, O. R. Lopez, C. Wirth, and C. E. Farrior. 2020. Demographic trade-offs predict tropical forest dynamics. Science 368:165–168. </i> 
+
+```{r Forest1-setup, include=FALSE}
+
+Forest1 <- models %>%
+    filter(Model == "PPA") %>%
+    select(-Model)
+
+```
+
+## 64-species mixture
+
+Initially, to demonstrate the broader competitive hierarchy within the model, we plot the biomass of all species within the 64-species treatment, during the terminal time step of both the metacommunity and isolation phases.
+
+```{r Forest1-plot-64}
+
+ggplot(Forest1 %>% filter(Ninitial == 64))  +
+    geom_point(aes(x = monoculture.biomass,
+                   y = Biomass,
+                   color = SpeciesID),
+               show.legend = FALSE) +
+    facet_grid(cols = vars(Stage)) +
+    scale_color_viridis_d() +
+    labs(x = "Monoculture biomass",
+         y = "Biomass in mixture") +
+    theme_bw()
+
+```
+
+```{r Forest1-select-32, include=FALSE}
+
+Forest1 <- Forest1 %>%
+    filter(Ninitial == 32)
+
+```
+
+## 32-species mixture
+
+We now plot the relationship between a species' monoculture biomass and its biomass within the 32-species mixture dataset to visualize the intent of this part of the analysis. There are 64 mixtures (i.e. replicate plots) within the richness treatment. Each color is a distinct species, and each point is a species' biomass within one mixture.
+
+```{r Forest1-plot}
+
+ggplot(Forest1)  +
+    geom_point(aes(x = monoculture.biomass,
+                   y = Biomass,
+                   color = SpeciesID),
+               show.legend = FALSE) +
+    facet_grid(cols = vars(Stage)) +
+    scale_color_viridis_d() +
+    labs(x = "Monoculture biomass",
+         y = "Biomass in mixture") +
+    theme_bw()
+
+```
+
+```{r Forest1-correlation}
+
+Forest1.corr <- Forest1 %>%
+    group_by(Ninitial, Stage) %>%
+    summarise(corr = cor(Biomass, monoculture.biomass))
+
+Forest1.corr <- Forest1.corr %>%
+    pivot_wider(names_from = Stage, values_from = corr)
+
+knitr::kable(Forest1.corr, 
+             caption = "Correlation between monoculture and mixture biomass",
+             col.names = c("Planted species richness", "Metacommunity", "Isolation"), 
+             align = 'r',
+             format = "html", 
+             digits = 3) %>%
+    kableExtra::kable_styling(bootstrap_options = c("striped", "hover", "condensed"),
+                              full_width = F)
+
+```
+
+
+****************************************************************************************************
+# Forest2
+
+<i> Maréchaux, I., and J. Chave. 2017. An individual-based forest model to jointly simulate carbon and tree diversity in Amazonia: description and applications. Ecological Monographs. </i> 
+
+```{r Forest2-setup, include=FALSE}
+
+Forest2 <- models %>%
+    filter(Model == "TROLL") %>%
+    select(-Model)
+
+```
+
+## 64-species mixture
+
+Initially, to demonstrate the broader competitive hierarchy within the model, we plot the biomass of all species within the 64-species treatment, during the terminal time step of both the metacommunity and isolation phases.
+
+```{r Forest2-plot-64}
+
+ggplot(Forest2 %>% filter(Ninitial == 64))  +
+    geom_point(aes(x = monoculture.biomass,
+                   y = Biomass,
+                   color = SpeciesID),
+               show.legend = FALSE) +
+    facet_grid(cols = vars(Stage)) +
+    scale_color_viridis_d() +
+    labs(x = "Monoculture biomass",
+         y = "Biomass in mixture") +
+    theme_bw()
+
+```
+
+```{r Forest2-select-32, include=FALSE}
+
+Forest2 <- Forest2 %>%
+    filter(Ninitial == 32)
+
+```
+
+## 32-species mixture
+
+We now plot the relationship between a species' monoculture biomass and its biomass within the 32-species mixture dataset to visualize the intent of this part of the analysis. There are 64 mixtures (i.e. replicate plots) within the richness treatment. Each color is a distinct species, and each point is a species' biomass within one mixture.
+
+```{r Forest2-plot}
+
+ggplot(Forest2)  +
+    geom_point(aes(x = monoculture.biomass,
+                   y = Biomass,
+                   color = SpeciesID),
+               show.legend = FALSE) +
+    facet_grid(cols = vars(Stage)) +
+    scale_color_viridis_d() +
+    labs(x = "Monoculture biomass",
+         y = "Biomass in mixture") +
+    theme_bw()
+
+```
+
+```{r Forest2-correlation}
+
+Forest2.corr <- Forest2 %>%
+    group_by(Ninitial, Stage) %>%
+    summarise(corr = cor(Biomass, monoculture.biomass))
+
+Forest2.corr <- Forest2.corr %>%
+    pivot_wider(names_from = Stage, values_from = corr)
+
+knitr::kable(Forest2.corr, 
+             caption = "Correlation between monoculture and mixture biomass",
+             col.names = c("Planted species richness", "Metacommunity", "Isolation"), 
+             align = 'r',
+             format = "html", 
+             digits = 3) %>%
+    kableExtra::kable_styling(bootstrap_options = c("striped", "hover", "condensed"),
+                              full_width = F)
+
+```
+
+
+****************************************************************************************************
+# Dryland
+
+<i> Reineking, B., M. Veste, C. Wissel, and A. Huth. 2006. Environmental variability and allocation trade-offs maintain species diversity in a process-based model of succulent plant communities. Ecological Modelling.</i> 
+
+```{r Dryland-setup, include=FALSE}
+
+Dryland <- models %>%
+    filter(Model == "bjoern") %>%
+    select(-Model)
+
+```
+
+## 64-species mixture
+
+Initially, to demonstrate the broader competitive hierarchy within the model, we plot the biomass of all species within the 64-species treatment, during the terminal time step of both the metacommunity and isolation phases.
+
+```{r Dryland-plot-64}
+
+ggplot(Dryland %>% filter(Ninitial == 64))  +
+    geom_point(aes(x = monoculture.biomass,
+                   y = Biomass,
+                   color = SpeciesID),
+               show.legend = FALSE) +
+    facet_grid(cols = vars(Stage)) +
+    scale_color_viridis_d() +
+    labs(x = "Monoculture biomass",
+         y = "Biomass in mixture") +
+    theme_bw()
+
+```
+
+```{r Dryland-select-32, include=FALSE}
+
+Dryland <- Dryland %>%
+    filter(Ninitial == 32)
+
+```
+
+## 32-species mixture
+
+We now plot the relationship between a species' monoculture biomass and its biomass within the 32-species mixture dataset to visualize the intent of this part of the analysis. There are 64 mixtures (i.e. replicate plots) within the richness treatment. Each color is a distinct species, and each point is a species' biomass within one mixture.
+
+```{r Dryland-plot}
+
+ggplot(Dryland)  +
+    geom_point(aes(x = monoculture.biomass,
+                   y = Biomass,
+                   color = SpeciesID),
+               show.legend = FALSE) +
+    facet_grid(cols = vars(Stage)) +
+    scale_color_viridis_d() +
+    labs(x = "Monoculture biomass",
+         y = "Biomass in mixture") +
+    theme_bw()
+
+```
+
+```{r Dryland-correlation}
+
+Dryland.corr <- Dryland %>%
+    group_by(Ninitial, Stage) %>%
+    summarise(corr = cor(Biomass, monoculture.biomass))
+
+Dryland.corr <- Dryland.corr %>%
+    pivot_wider(names_from = Stage, values_from = corr)
+
+knitr::kable(Dryland.corr, 
+             caption = "Correlation between monoculture and mixture biomass",
+             col.names = c("Planted species richness", "Metacommunity", "Isolation"), 
+             align = 'r',
+             format = "html", 
+             digits = 3) %>%
+    kableExtra::kable_styling(bootstrap_options = c("striped", "hover", "condensed"),
+                              full_width = F)
+
+```
