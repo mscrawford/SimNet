@@ -138,18 +138,39 @@ troll_traits <- fread("TROLL_Table2.txt") %>%
 # -------------------------------------------------------------------------
 # Succulent model
 
-succ <- readRDS("bjoern_Table1_averaged_smooth_NAreplaced0.rds") %>%
-    select(-Smooth) %>%
-    ungroup() %>%
-    mutate(Model = "Dryland")
+#succ <- readRDS("bjoern_Table1_averaged_smooth_NAreplaced0.rds") %>%
+#    select(-Smooth) %>%
+#    ungroup() %>%
+#    mutate(Model = "Dryland")
+#
+#succ <- succ %>%
+#    mutate(Productivity = replace(Productivity, Productivity < 0, 0))
+#
+#succ_traits <- readRDS("bjoern_Table2.rds") %>%
+#    select(SpeciesID, maxSize, pLeaf, pRoot, pStorage)
+#
+#---
+bjoern <- readRDS("bjoern_Table1_averaged_smooth_NAreplaced0.rds") %>%
+    select(-Productivity, -Smooth)# %>%
+#    mutate(Model = "Dryland")
 
-succ <- succ %>%
-    mutate(Productivity = replace(Productivity, Productivity < 0, 0))
 
-succ_traits <- readRDS("bjoern_Table2.rds") %>%
+bjoern_traits <- readRDS("bjoern_Table2.rds") %>%
     select(SpeciesID, maxSize, pLeaf, pRoot, pStorage)
 
+bjoern <- bjoern %>%
+    filter(!is.na(Biomass)) %>%
+    filter(SeedRain %in% c(100))
 
+bjoern <- bjoern %>%
+    mutate(Stage = recode(Stage,
+                          assembly = "metacommunity",
+                          disassembly = "isolation"))
+
+bjoern <- bjoern %>%
+    ungroup() %>% # There shouldn't be groups anyways
+    mutate(Biomass = scales::rescale(Biomass,
+                                     to = c(0, 100)))
 # -------------------------------------------------------------------------
 # General model formatting
 
@@ -159,7 +180,7 @@ model_runs <- list(adam,
                    # IBC_grass.noNDD,
                    PPA,
                    troll,
-                   succ)
+                   bjoern)
 
 model_runs <- map(.x = model_runs,
                   .f = ~ {
@@ -171,8 +192,8 @@ model_runs <- map(.x = model_runs,
                                  SpeciesID = as.character(SpeciesID),
                                  Stage = as.factor(Stage),
                                  Year = as.numeric(Year),
-                                 Biomass = as.numeric(Biomass),
-                                 Productivity = as.numeric(Productivity))
+                                 Biomass = as.numeric(Biomass))#,
+                                 #Productivity = as.numeric(Productivity))
 
                       .x <- .x %>%
                           mutate(Stage = recode(Stage,
@@ -190,10 +211,9 @@ model_runs <- map(.x = model_runs,
 model_traits <- list(adam_traits,
                      lindsay_traits,
                      IBC_grass_traits,
-                     # IBC_grass_traits,
                      PPA_traits,
                      troll_traits,
-                     succ_traits)
+                     bjoern_traits)
 
 model_traits <- map(.x = model_traits,
                     .f = ~ .x %>% mutate(SpeciesID = as.character(SpeciesID)))
