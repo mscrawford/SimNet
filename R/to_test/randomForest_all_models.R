@@ -1,23 +1,3 @@
----
-title: "Random Forest Analysis: Traits (all models) Vs. log Mean biomass"
-author: "VeronikaCeballosN"
-date: "4/30/2021"
-output: html_document
----
-
-## Setup
-
-```{r setup, include=FALSE}
-
-options(width = 1000)
-
-knitr::opts_chunk$set(echo = TRUE,
-                      warning = FALSE,
-                      message = FALSE,
-                      #fig.height = 4,
-                      #fig.width = 8,
-                      size = "small") 
-
 library(data.table)
 library(tidyverse)
 library(ggthemes)
@@ -29,33 +9,26 @@ library(plotly)
 library(randomForest)
 library(pdp)
 
-```
-
-## Read models
-
-First we read the 6 models, using the "readModels.R" script from Michael Crawford.
-
-```{r read-models, echo=TRUE}
-setwd(dirname(rstudioapi::getActiveDocumentContext()$path)); setwd("../../")
-base_dir          <- getwd()
+#setwd(dirname(rstudioapi::getActiveDocumentContext()$path)); setwd("../")
+base_dir          <- setwd("../")
 scripts_dir       <- paste0(base_dir, "/R")
 tmp_dir           <- paste0(base_dir, "/tmp")
 raw_data_dir      <- paste0(base_dir, "/data/raw")
 
-source(paste0(scripts_dir, "/readModels.R"))
-```
+#source(paste0(scripts_dir, "/readModels.R"))
+source(paste0(scripts_dir, "/G1readModels.R"))
 
-```{r randomForest_4conditions, echo=TRUE}
 meta = seq(80, 100)
 iso = seq(180, 200)
 
 randomForest_4conditions <- function(modelName,model,NoSpp,stage){
+	print(modelName)
         model <- model %>%
             filter(Ninitial == NoSpp,
                    Year %in% stage) %>%
             mutate(id = row_number()) %>%
             mutate_if(is.character, as.factor) %>%
-            select(-Productivity,-SpeciesID, -Ninitial, -Stage, -Rep) 
+            select(-SpeciesID, -Ninitial, -Stage, -Rep) 
         
         train <- model %>% sample_frac(.70)
         test <- anti_join(model, train, by = 'id')
@@ -77,13 +50,9 @@ randomForest_4conditions <- function(modelName,model,NoSpp,stage){
         #dev.set(dev.next())
         while (!is.null(dev.list()))  dev.off()
 }
-```
 
 ### Grass1 (Adam's model)
 
-Grass1 has 3 variables, but here only two (pNi -aboveground tissue nitrogen concentration- and no3i -nitrogen R*-) will be plotted, because the trait 'abmi' corresponds to monoculture biomass.
-
-```{r Grass1-randomForest1, echo=TRUE, fig.height = 6, fig.width = 12}
 adam <- adam %>%
     select(-Model, -SeedRain) %>%
     mutate(SpeciesID = as.factor(SpeciesID))
@@ -97,13 +66,9 @@ G1C1 <- randomForest_4conditions("G1C1",adam,1,meta)
 G1C2 <- randomForest_4conditions("G1C2",adam,1,iso)
 G1C3 <- randomForest_4conditions("G1C3",adam,32,meta)
 G1C4 <- randomForest_4conditions("G1C4",adam,32,iso)
-```
 
 ### Grass2 (Lindsay's model)
 
-Grass2 has 2 traits: Theta_i and V_i
-
-```{r Grass2-randomForest, echo=TRUE, fig.height = 6, fig.width = 12}
 lindsay <- lindsay %>%
     select(-Model, -SeedRain) %>%
     mutate(SpeciesID = as.factor(SpeciesID))
@@ -115,15 +80,11 @@ lindsay <- inner_join(lindsay, lindsay_traits, by = c("SpeciesID"))
 
 G2C1 <- randomForest_4conditions("G2C1",lindsay,1,meta)
 G2C2 <- randomForest_4conditions("G2C2",lindsay,1,iso)
-G2C3 <- randomForest_4conditions("G2C3",lindsay,32,meta)
-G2C4 <- randomForest_4conditions("G2C4",lindsay,32,iso)
-```
+G2C3 <- randomForest_4conditions("G2C3",lindsay,8,meta)
+G2C4 <- randomForest_4conditions("G2C4",lindsay,8,iso)
 
 ### Grass3 (IBC-grass)
 
-Grass3 has 5 traits: Gmax, LMR, MaxMass, MeanSpacerLength, and SLA. After the randomForest analysis, Gmax and LMR were selected.
-
-```{r Grass3-randomForest, echo=TRUE, fig.height = 6, fig.width = 12}
 IBC_grass <- models$Grass3 %>%
     select(-Model, -SeedRain) %>%
     mutate(SpeciesID = as.factor(SpeciesID))
@@ -137,13 +98,9 @@ G3C1 <- randomForest_4conditions("G3C1",IBC_grass,1,meta)
 G3C2 <- randomForest_4conditions("G3C2",IBC_grass,1,iso)
 G3C3 <- randomForest_4conditions("G3C3",IBC_grass,32,meta)
 G3C4 <- randomForest_4conditions("G3C4",IBC_grass,32,iso)
-```
 
 ### Forest1 (PPA)
 
-Forest1 has 2 traits: PC1score and PC2score.
-
-```{r Forest1-randomForest, echo=TRUE, fig.height = 6, fig.width = 12}
 PPA <- models$Forest1 %>%
     select(-Model, -SeedRain)
 
@@ -151,15 +108,9 @@ F1C1 <- randomForest_4conditions("F1C1",PPA,1,meta)
 F1C2 <- randomForest_4conditions("F1C2",PPA,1,iso)
 F1C3 <- randomForest_4conditions("F1C3",PPA,32,meta)
 F1C4 <- randomForest_4conditions("F1C4",PPA,32,iso)
-```
 
 ### Forest2 (TROLL)
 
-Forest2 has 7 traits: LMA (leaf mass per area), N -nmass- (leaf N content per dry mass), P -pmass- (leaf P content per dry mass), wsg (wood specific gravity), dbh_thresh -dmax- (diameter at breast height threshold), -h_realmax- {h_lim -hmax- (asymptotic height), ah (parameter of the tree-height-dbh allometry)}. 
-
-After the randomForest analysis, LMA and dmax were selected.
-
-```{r Forest2-randomForest, echo=TRUE, fig.height = 6, fig.width = 12}
 troll <- troll %>%
     select(-Model, -SeedRain) %>%
     mutate(SpeciesID = as.factor(SpeciesID))
@@ -175,70 +126,13 @@ troll <- troll %>%
 
 F2C1 <- randomForest_4conditions("F2C1",troll,1,meta)
 F2C2 <- randomForest_4conditions("F2C2",troll,1,iso)
-F2C3 <- randomForest_4conditions("F2C3",troll,32,meta)
-F2C4 <- randomForest_4conditions("F2C4",troll,32,iso)
-```
+F2C3 <- randomForest_4conditions("F2C3",troll,8,meta)
+F2C4 <- randomForest_4conditions("F2C4",troll,8,iso)
 
-```{r Forest2-randomForest_test, echo=TRUE, fig.height = 6, fig.width = 12}
-troll.32 <- troll %>%
-    filter(Ninitial == 32,
-           Year %in% seq(80, 100)) %>%
-    mutate(id = row_number()) %>%
-    mutate_if(is.character, as.factor) %>%
-    select(-SpeciesID, -Ninitial, -Stage, -Rep) 
-
-train <- troll.32 %>% sample_frac(.70)
-test <- anti_join(troll.32, train, by = 'id')
-
-train <- train %>% select(-id)
-test <- test %>% select(-id)
-
-rf.32 <- randomForest(data = as.data.frame(train),
-                      Biomass ~ .,
-                      importance = TRUE)
-
-pred <- data.frame(pred = predict(rf.32, test))
-title = paste("correlation: ", round(cor(pred, test$Biomass)[[1]], 2),
-              "  |  mean squared error: ", round(mean(rf.32$mse), 2),
-              "  |  R-squared: ", round(mean(rf.32$rsq), 2),
-              sep = "")
-pdf("F2C3_test.pdf")
-varImpPlot(rf.32, main = title)
-while (!is.null(dev.list()))  dev.off()
-```
-
-'```{r Forest2-randomForest_test2, echo=TRUE, fig.height = 6, fig.width = 12}
-troll.32 <- troll %>%
-    filter(Ninitial == 32,
-           Year %in% seq(180, 200)) %>%
-    mutate(id = row_number()) %>%
-    mutate_if(is.character, as.factor) %>%
-    select(-SpeciesID, -Ninitial, -Stage, -Rep) 
-
-train <- troll.32 %>% sample_frac(.70)
-test <- anti_join(troll.32, train, by = 'id')
-
-train <- train %>% select(-id)
-test <- test %>% select(-id)
-
-rf.32 <- randomForest(data = as.data.frame(train),
-                      Biomass ~ .,
-                      importance = TRUE)
-
-pred <- data.frame(pred = predict(rf.32, test))
-title = paste("correlation: ", round(cor(pred, test$Biomass)[[1]], 2),
-              "  |  mean squared error: ", round(mean(rf.32$mse), 2),
-              "  |  R-squared: ", round(mean(rf.32$rsq), 2),
-              sep = "")
-pdf("F2C4_test.pdf")
-varImpPlot(rf.32, main = title)
-while (!is.null(dev.list()))  dev.off()
-#```
 ### Dryland (Bjoern)
 
 Dryland has 4 traits. After the randomForest analysis, maxSize and pLeaf were selected.
 
-```{r Dryland-randomForest, echo=TRUE, fig.height = 6, fig.width = 12}
 bjoern <- models$bjoern %>%#Dryland %>% 
     select(-Model, -SeedRain) %>%
     mutate(SpeciesID = as.factor(SpeciesID))
@@ -252,4 +146,4 @@ DC1 <- randomForest_4conditions("DC1",bjoern,1,meta)
 DC2 <- randomForest_4conditions("DC2",bjoern,1,iso)
 DC3 <- randomForest_4conditions("DC3",bjoern,32,meta)
 DC4 <- randomForest_4conditions("DC4",bjoern,32,iso)
-```
+

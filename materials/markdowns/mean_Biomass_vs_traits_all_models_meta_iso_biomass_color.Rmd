@@ -37,10 +37,11 @@ library(dplyr)
 First we read the 6 models, using the "readModels.R" script from Michael Crawford.
 
 ```{r read-models, echo=TRUE}
-setwd(dirname(rstudioapi::getActiveDocumentContext()$path)); setwd("../")
+setwd(dirname(rstudioapi::getActiveDocumentContext()$path)); setwd("../../")
 base_dir          <- getwd()
 scripts_dir       <- paste0(base_dir, "/R")
 raw_data_dir      <- paste0(base_dir, "/data/raw")
+tmp_dir           <- paste0(base_dir, "/tmp")
 
 source(paste0(scripts_dir, "/readModels.R"))
 ```
@@ -91,7 +92,7 @@ The plotted variables are: trait 1 Vs. Trrait 2, with dots size according to mea
 For this purpose we have the following function:
 
 ```{r plotting_function, echo=TRUE}
-t1_vs_t2_vs_biomass_meta_iso <- function(model,NoSpp,g_by,Biomass,trait1,trait2,xlab,ylab){
+t1_vs_t2_vs_biomass_meta_iso <- function(plotName,model,NoSpp,g_by,Biomass,trait1,trait2,xlab,ylab){
 labNoSpp <- if (NoSpp == 32) "32-species mixture" else  "monoculture"
 #labNoSpp <- if (NoSpp == 1) "monoculture"
 
@@ -135,6 +136,15 @@ labNoSpp <- if (NoSpp == 32) "32-species mixture" else  "monoculture"
          y = ylab) +
     theme_bw() +
     theme(aspect.ratio = 1)
+  
+  filename <- paste0(plotName,".pdf")
+  path <- paste0(tmp_dir,"/pdfs/")
+  ggsave(filename = filename
+         ,path = path
+         ,plot = p1
+         ,height = 12
+         ,width = 19
+         ,units = "cm")
   return(p1)
 }
 ```
@@ -159,13 +169,8 @@ g_by <- c("SpeciesID", "Year", "Stage", "pNi", "no3i")
 lab1 <- "pNi (aboveground N concentration)"
 lab2 <- "no3i (nitrogen R*)"
 
-p1 <- t1_vs_t2_vs_biomass_meta_iso(adam,1,g_by,"Biomass","pNi","no3i",lab1,lab2)
-ggsave("G1mono.pdf")
-p2 <- t1_vs_t2_vs_biomass_meta_iso(adam,1,g_by,"Biomass","no3i","pNi",lab2,lab1)
-p1m <- t1_vs_t2_vs_biomass_meta_iso(adam,32,g_by,"Biomass","pNi","no3i",lab1,lab2)
-ggsave("G1mix.pdf")
-p2m <- t1_vs_t2_vs_biomass_meta_iso(adam,32,g_by,"Biomass","no3i","pNi",lab2,lab1)
-
+p1 <- t1_vs_t2_vs_biomass_meta_iso("G1mono",adam,1,g_by,"Biomass","pNi","no3i",lab1,lab2)
+p2 <- t1_vs_t2_vs_biomass_meta_iso("G1mix",adam,32,g_by,"Biomass","pNi","no3i",lab1,lab2)
 #ggarrange(p1, p2, ncol = 2, nrow = 1)
 ```
 
@@ -187,13 +192,8 @@ g_by <- c("SpeciesID", "Year", "Stage", "Vi", "thetai")
 lab1 <- "Vi (volume of soil accessible to species i)"
 lab2 <- "thetai (Nitrogen uptake rate per unit plant biomass)"
 
-p3 <- t1_vs_t2_vs_biomass_meta_iso(lindsay,1,g_by,"Biomass","Vi","thetai",lab1,lab2)
-ggsave("G2mono.pdf")
-p4 <- t1_vs_t2_vs_biomass_meta_iso(lindsay,1,g_by,"Biomass","thetai","Vi",lab2,lab1)
-p3m <- t1_vs_t2_vs_biomass_meta_iso(lindsay,32,g_by,"Biomass","Vi","thetai",lab1,lab2)
-ggsave("G2mix.pdf")
-p4m <- t1_vs_t2_vs_biomass_meta_iso(lindsay,32,g_by,"Biomass","thetai","Vi",lab2,lab1)
-
+p3 <- t1_vs_t2_vs_biomass_meta_iso("G2mono",lindsay,1,g_by,"Biomass","Vi","thetai",lab1,lab2)
+p4 <- t1_vs_t2_vs_biomass_meta_iso("G2mix",lindsay,32,g_by,"Biomass","Vi","thetai",lab1,lab2)
 ```
 
 ### Grass3 (IBC-grass)
@@ -215,14 +215,8 @@ lab1 <- "Gmax (maximum resource utilization per time step)"
 lab2 <- "MaxMass (Plant's maximum size)"
 lab3 <- "LMR (leaf to mass ratio)"
 
-p5 <- t1_vs_t2_vs_biomass_meta_iso(IBC_grass,1,g_by,"Biomass","Gmax.x","MaxMass.x",lab1,lab2)
-ggsave("G3mono.pdf")
-p6 <- t1_vs_t2_vs_biomass_meta_iso(IBC_grass,1,g_by,"Biomass","LMR.x","Gmax.x",lab3,lab1)
-p5m <- t1_vs_t2_vs_biomass_meta_iso(IBC_grass,32,g_by,"Biomass","Gmax.x","MaxMass.x",lab1,lab2)
-ggsave("G3mix.pdf")
-p6m <- t1_vs_t2_vs_biomass_meta_iso(IBC_grass,32,g_by,"Biomass","LMR.x","Gmax.x",lab3,lab1)
-
-ggarrange(p5, p5m, ncol = 2, nrow = 1)
+p5 <- t1_vs_t2_vs_biomass_meta_iso("G3mono",IBC_grass,1,g_by,"Biomass","Gmax.x","MaxMass.x",lab1,lab2)
+p6 <- t1_vs_t2_vs_biomass_meta_iso("G3mix",IBC_grass,32,g_by,"Biomass","Gmax.x","MaxMass.x",lab1,lab2)
 ```
 
 ### Forest1 (PPA)
@@ -237,12 +231,8 @@ g_by <- c("SpeciesID", "Year", "Stage", "PC1score", "PC2score")
 lab1 <- "PC1score (associated with fast-slow lifecycle)"#plant height)"
 lab2 <- "PC2score (associated with tree stature)"# LMA -leaf mass per area)"
 
-p7 <- t1_vs_t2_vs_biomass_meta_iso(PPA,1,g_by,"Biomass","PC1score","PC2score",lab1,lab2)
-ggsave("F1mono.pdf")
-p8 <- t1_vs_t2_vs_biomass_meta_iso(PPA,1,g_by,"Biomass","PC2score","PC1score",lab2,lab1)
-p7m <- t1_vs_t2_vs_biomass_meta_iso(PPA,32,g_by,"Biomass","PC1score","PC2score",lab1,lab2)
-ggsave("F1mix.pdf")
-p8m <- t1_vs_t2_vs_biomass_meta_iso(PPA,32,g_by,"Biomass","PC2score","PC1score",lab2,lab1)
+p7 <- t1_vs_t2_vs_biomass_meta_iso("F1mono",PPA,1,g_by,"Biomass","PC1score","PC2score",lab1,lab2)
+p8 <- t1_vs_t2_vs_biomass_meta_iso("F1mix",PPA,32,g_by,"Biomass","PC1score","PC2score",lab1,lab2)
 ```
 
 ### Forest2 (TROLL)
@@ -271,14 +261,8 @@ lab2 <- "dmax (diameter at breast height threshold)"
 lab3 <- "wsg (wood specific gravity)"
 lab4 <- "pmass (leaf P content per dry mass)"
 
-p9 <- t1_vs_t2_vs_biomass_meta_iso(troll,1,g_by,"Biomass","lma","dmax",lab1,lab2)
-p10 <- t1_vs_t2_vs_biomass_meta_iso(troll,1,g_by,"Biomass","dmax","wsg",lab2,lab3)
-ggsave("F2mono.pdf")
-p11 <- t1_vs_t2_vs_biomass_meta_iso(troll,1,g_by,"Biomass","wsg","dmax",lab3,lab2)
-p9m <- t1_vs_t2_vs_biomass_meta_iso(troll,32,g_by,"Biomass","lma","dmax",lab1,lab2)
-ggsave("F2mix.pdf")
-p10m <- t1_vs_t2_vs_biomass_meta_iso(troll,32,g_by,"Biomass","dmax","wsg",lab2,lab1)
-p11m <- t1_vs_t2_vs_biomass_meta_iso(troll,32,g_by,"Biomass","wsg","dmax",lab3,lab2)
+p9 <- t1_vs_t2_vs_biomass_meta_iso("F2mono",troll,1,g_by,"Biomass","dmax","wsg",lab2,lab3)
+p10 <- t1_vs_t2_vs_biomass_meta_iso("F2mix",troll,32,g_by,"Biomass","lma","dmax",lab1,lab2)
 ```
 
 ### Dryland (Bjoern)
@@ -300,12 +284,8 @@ lab1 <- "maxSize (maximum size/size at maturity) [gC]"
 lab2 <- "pLeaf (allocation to leaf) [gC/gC]"
 lab3 <- "pStorage (allocation to storage) [gC/gC]"
 
-p12 <- t1_vs_t2_vs_biomass_meta_iso(bjoern,1,g_by,"Biomass","maxSize.x","pLeaf.x",lab1,lab2)
-p13 <- t1_vs_t2_vs_biomass_meta_iso(bjoern,1,g_by,"Biomass","maxSize.x","pStorage.x",lab1,lab3)
-ggsave("Dmono.pdf")
-p12m <- t1_vs_t2_vs_biomass_meta_iso(bjoern,32,g_by,"Biomass","maxSize.x","pLeaf.x",lab1,lab2)
-ggsave("Dmix.pdf")
-p13m <- t1_vs_t2_vs_biomass_meta_iso(bjoern,32,g_by,"Biomass","maxSize.x","pStorage.x",lab1,lab3)
+p11 <- t1_vs_t2_vs_biomass_meta_iso("Dmono",bjoern,1,g_by,"Biomass","maxSize.x","pStorage.x",lab1,lab3)
+p12 <- t1_vs_t2_vs_biomass_meta_iso("Dmix",bjoern,32,g_by,"Biomass","maxSize.x","pLeaf.x",lab1,lab2)
 ```
 ## All models
 
@@ -336,7 +316,7 @@ Species with the highest values of dmax (diameter at breast height threshold) an
 In monoculture, species with an average allocation to storage (pStorage) (as long as their size at maturity -maxSize surpasses a low threshold). In mixture, pSotarge does not influence biomass accumulation as much as pLeaf does (see random Forest results for this model in Crawford's Mechanisms Rmd files). For the species growing in mixture, the clearest trend is observed after the isolation phase, where the species with the highest biomass are those with medium sized allocation to leaves (pLeaf) and low maximum size at maturity. Similar to forest 2, the species in mixture are more affected to seed inflow than those in monoculture; by the end of the isolation phase the biomass accumulation seems to diminish and a few species do not survive.
 
 ```{r traits-vs-32spp-biomass, echo=TRUE, fig.height = 33, fig.width = 20}
-ggarrange(p1,p1m, p3,p3m, p5,p5m, p7,p7m, p10,p9m, p13,p12m, 
+ggarrange(p1,p2,p3,p4,p5,p6,p7,p8,p9,p10,p11,p12, 
          labels = c("Grass 1 monoculture","Grass 1 mixture","Grass 2 monoculture","Grass 2 mixture","Grass 3 monoculture","Grass 3 mixture","Forest 1 monoculture","Forest 1 mixture","Forest 2 monoculture","Forest 2 mixture","Dryland monoculture","Dryland mixture"),
          ncol = 2, nrow = 6)
 

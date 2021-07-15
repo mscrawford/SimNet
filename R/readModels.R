@@ -151,7 +151,9 @@ troll_traits <- fread("TROLL_Table2.txt") %>%
 #
 #---
 bjoern <- readRDS("bjoern_Table1_averaged_smooth_NAreplaced0.rds") %>%
-    select(-Productivity, -Smooth)# %>%
+  #select(-Productivity, -Smooth)# %>%
+  select(-Smooth)# %>%
+
 #    mutate(Model = "Dryland")
 
 
