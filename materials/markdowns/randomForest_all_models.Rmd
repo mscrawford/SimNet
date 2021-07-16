@@ -155,7 +155,7 @@ F1C4 <- randomForest_4conditions("F1C4",PPA,32,iso)
 
 ### Forest2 (TROLL)
 
-Forest2 has 7 traits: LMA (leaf mass per area), N -nmass- (leaf N content per dry mass), P -pmass- (leaf P content per dry mass), wsg (wood specific gravity), dbh_thresh -dmax- (diameter at breast height threshold), -h_realmax- {h_lim -hmax- (asymptotic height), ah (parameter of the tree-height-dbh allometry)}. 
+Forest2 has 7 traits: LMA (leaf mass per area), N -nmass- (leaf N content per dry mass), P -pmass- (leaf P content per dry mass), wsg (wood specific gravity), dbh$_{thresh}$ -dmax- (diameter at breast height threshold), -h_realmax- (h$_{lim}$ -hmax- (asymptotic height), ah (parameter of the tree-height-dbh allometry)). 
 
 After the randomForest analysis, LMA and dmax were selected.
 
@@ -179,61 +179,6 @@ F2C3 <- randomForest_4conditions("F2C3",troll,32,meta)
 F2C4 <- randomForest_4conditions("F2C4",troll,32,iso)
 ```
 
-```{r Forest2-randomForest_test, echo=TRUE, fig.height = 6, fig.width = 12}
-troll.32 <- troll %>%
-    filter(Ninitial == 32,
-           Year %in% seq(80, 100)) %>%
-    mutate(id = row_number()) %>%
-    mutate_if(is.character, as.factor) %>%
-    select(-SpeciesID, -Ninitial, -Stage, -Rep) 
-
-train <- troll.32 %>% sample_frac(.70)
-test <- anti_join(troll.32, train, by = 'id')
-
-train <- train %>% select(-id)
-test <- test %>% select(-id)
-
-rf.32 <- randomForest(data = as.data.frame(train),
-                      Biomass ~ .,
-                      importance = TRUE)
-
-pred <- data.frame(pred = predict(rf.32, test))
-title = paste("correlation: ", round(cor(pred, test$Biomass)[[1]], 2),
-              "  |  mean squared error: ", round(mean(rf.32$mse), 2),
-              "  |  R-squared: ", round(mean(rf.32$rsq), 2),
-              sep = "")
-pdf("F2C3_test.pdf")
-varImpPlot(rf.32, main = title)
-while (!is.null(dev.list()))  dev.off()
-```
-
-'```{r Forest2-randomForest_test2, echo=TRUE, fig.height = 6, fig.width = 12}
-troll.32 <- troll %>%
-    filter(Ninitial == 32,
-           Year %in% seq(180, 200)) %>%
-    mutate(id = row_number()) %>%
-    mutate_if(is.character, as.factor) %>%
-    select(-SpeciesID, -Ninitial, -Stage, -Rep) 
-
-train <- troll.32 %>% sample_frac(.70)
-test <- anti_join(troll.32, train, by = 'id')
-
-train <- train %>% select(-id)
-test <- test %>% select(-id)
-
-rf.32 <- randomForest(data = as.data.frame(train),
-                      Biomass ~ .,
-                      importance = TRUE)
-
-pred <- data.frame(pred = predict(rf.32, test))
-title = paste("correlation: ", round(cor(pred, test$Biomass)[[1]], 2),
-              "  |  mean squared error: ", round(mean(rf.32$mse), 2),
-              "  |  R-squared: ", round(mean(rf.32$rsq), 2),
-              sep = "")
-pdf("F2C4_test.pdf")
-varImpPlot(rf.32, main = title)
-while (!is.null(dev.list()))  dev.off()
-#```
 ### Dryland (Bjoern)
 
 Dryland has 4 traits. After the randomForest analysis, maxSize and pLeaf were selected.

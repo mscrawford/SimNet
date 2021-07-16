@@ -161,18 +161,14 @@ bjoern_traits <- readRDS("bjoern_Table2.rds") %>%
     select(SpeciesID, maxSize, pLeaf, pRoot, pStorage)
 
 bjoern <- bjoern %>%
-    filter(!is.na(Biomass)) %>%
-    filter(SeedRain %in% c(100))
+    filter(!is.na(Biomass)) #%>%
+#    filter(SeedRain %in% c(100))
+#
+#bjoern <- bjoern %>%
+#    mutate(Stage = recode(Stage,
+#                          assembly = "metacommunity",
+#                          disassembly = "isolation"))
 
-bjoern <- bjoern %>%
-    mutate(Stage = recode(Stage,
-                          assembly = "metacommunity",
-                          disassembly = "isolation"))
-
-bjoern <- bjoern %>%
-    ungroup() %>% # There shouldn't be groups anyways
-    mutate(Biomass = scales::rescale(Biomass,
-                                     to = c(0, 100)))
 # -------------------------------------------------------------------------
 # General model formatting
 

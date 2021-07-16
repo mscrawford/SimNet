@@ -5,43 +5,39 @@ library(scales)
 setwd(raw_data_dir)
 
 # -------------------------------------------------------------------------
-# Succulent model
+# PPA
 
-#succ <- readRDS("bjoern_Table1_averaged_smooth_NAreplaced0.rds") %>%
-#    select(-Smooth) %>%
-#    ungroup() %>%
-#    mutate(Model = "Dryland")
-#
-#succ <- succ %>%
-#    mutate(Productivity = replace(Productivity, Productivity < 0, 0))
-#
-#succ_traits <- readRDS("bjoern_Table2.rds") %>%
-#    select(SpeciesID, maxSize, pLeaf, pRoot, pStorage)
-#
-#---
-bjoern <- readRDS("bjoern_Table1_averaged_smooth_NAreplaced0.rds") %>%
-  #select(-Productivity, -Smooth)# %>%
-  select(-Smooth)# %>%
+PPA <- readRDS("PPA_Table1.rds") %>%
+    filter(Year %in% seq(0, 2000, 10)) %>%
+    mutate(Year = Year / 10) %>%
+    select(-`F`, -N, -BasalArea)
 
-#    mutate(Model = "Dryland")
+PPA_traits <- fread("PPA_Table2.csv")
 
+# PPA does not print species without biomass, so I include them by hand
+PPA_initialCommunities <- fread("PPA_initialCommunities.csv")
 
-bjoern_traits <- readRDS("bjoern_Table2.rds") %>%
-    select(SpeciesID, maxSize, pLeaf, pRoot, pStorage)
+PPA_initialCommunities <- PPA_initialCommunities %>%
+    expand_grid(SeedRain = unique(PPA$SeedRain), # I only ran scenarios with these levels of seed rain
+                Year = seq(1, 200)) %>%
+    mutate(Model = "PPA",
+           Stage = ifelse(Year > 100, "disassembly", "assembly"),
+           Biomass = 0,
+           Productivity = 0)
 
-bjoern <- bjoern %>%
-    filter(!is.na(Biomass)) #%>%
-#    filter(SeedRain %in% c(100))
-#
-#bjoern <- bjoern %>%
-#    mutate(Stage = recode(Stage,
-#                          assembly = "metacommunity",
-#                          disassembly = "isolation"))
+extirpated <- anti_join(PPA_initialCommunities, PPA,
+                        by = c("Model", "Ninitial", "Rep", "SeedRain", "SpeciesID", "Stage", "Year"))
+
+PPA <- bind_rows(PPA, extirpated) %>%
+    mutate(Model = "Forest1")
+
+rm(PPA_initialCommunities, extirpated)
+
 
 # -------------------------------------------------------------------------
 # General model formatting
 
-model_runs <- list(bjoern)
+model_runs <- list(PPA)
 
 model_runs <- map(.x = model_runs,
                   .f = ~ {
@@ -69,7 +65,7 @@ model_runs <- map(.x = model_runs,
                       as_tibble(.x)
                   })
 
-model_traits <- list(bjoern_traits)
+model_traits <- list(PPA_traits)
 
 model_traits <- map(.x = model_traits,
                     .f = ~ .x %>% mutate(SpeciesID = as.character(SpeciesID)))
