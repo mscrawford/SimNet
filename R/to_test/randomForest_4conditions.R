@@ -31,5 +31,6 @@ randomForest_4conditions <- function(modelName,model,NoSpp,stage){
         varImpPlot(rf, main = title)
         #dev.set(dev.next())
         while (!is.null(dev.list()))  dev.off()
+        print(rf$importance)
         return(rf)
 }
