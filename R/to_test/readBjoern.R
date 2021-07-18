@@ -30,9 +30,9 @@ bjoern_traits <- readRDS("bjoern_Table2.rds") %>%
     select(SpeciesID, maxSize, pLeaf, pRoot, pStorage)
 
 bjoern <- bjoern %>%
-    filter(!is.na(Biomass)) #%>%
-#    filter(SeedRain %in% c(100))
-#
+    filter(!is.na(Biomass)) %>%
+    filter(SeedRain %in% c(100))
+
 #bjoern <- bjoern %>%
 #    mutate(Stage = recode(Stage,
 #                          assembly = "metacommunity",
