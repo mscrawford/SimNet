@@ -15,7 +15,7 @@ adam <- models$Grass1 %>%
   ungroup() %>% # There shouldn't be groups anyways
   mutate(Biomass = scales::rescale(Biomass,
                                    to = c(0, 100)))%>%
-  select(-Model, -SeedRain) 
+  select(-Model, -SeedRain, -abmi) #Removed abmi because it is highly correlated to biomass
 
 G1C1 <- randomForest_4conditions("G1C1",adam,1,meta)
 G1C2 <- randomForest_4conditions("G1C2",adam,1,iso)
@@ -96,3 +96,7 @@ DC2 <- randomForest_4conditions("DC2",bjoern,1,iso)
 DC3 <- randomForest_4conditions("DC3",bjoern,32,meta)
 DC4 <- randomForest_4conditions("DC4",bjoern,32,iso)
 
+#Error: unexpected symbol in "capture.output(for i"
+#model_list <- c(G1C1,G1C2,G1C3,G1C4)
+#capture.output(for i in model_list print(i$importance),
+#               file = (paste0(tmp_dir,"/randomForest/importance.txt")))

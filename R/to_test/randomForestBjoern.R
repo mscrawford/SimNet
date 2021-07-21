@@ -14,8 +14,7 @@ bjoern <- models$bjoern %>%
     ungroup() %>% # There shouldn't be groups anyways
     mutate(Biomass = scales::rescale(Biomass,
                                      to = c(0, 100)))%>%
-    select(-Model, -SeedRain) %>%
-    mutate(SpeciesID = as.factor(SpeciesID))
+    select(-Model, -SeedRain)
 
 DC1 <- randomForest_4conditions("DC1",bjoern,1,meta)
 DC2 <- randomForest_4conditions("DC2",bjoern,1,iso)

@@ -14,8 +14,7 @@ lindsay <- models$Grass2%>%
     ungroup() %>% # There shouldn't be groups anyways
     mutate(Biomass = scales::rescale(Biomass,
                                      to = c(0, 100)))%>%
-    select(-Model, -SeedRain) %>%
-    mutate(SpeciesID = as.factor(SpeciesID))
+    select(-Model, -SeedRain) 
 
 G2C1 <- randomForest_4conditions("G2C1",lindsay,1,meta)
 G2C2 <- randomForest_4conditions("G2C2",lindsay,1,iso)

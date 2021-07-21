@@ -28,7 +28,7 @@ randomForest_4conditions <- function(modelName,model,NoSpp,stage){
                       "  |  R-squared: ", round(mean(rf$rsq), 2),
                       sep = "")
         pdf(paste0(tmp_dir,"/randomForest/",modelName,".pdf"))
-        varImpPlot(rf, main = title)
+        varImpPlot(rf,main = title)#, cex=1.2)
         #dev.set(dev.next())
         while (!is.null(dev.list()))  dev.off()
         print(rf$importance)

@@ -15,9 +15,6 @@ troll <- models$Forest2 %>%
     mutate(Biomass = scales::rescale(Biomass,
                                      to = c(0, 100)))%>%
     select(-Model, -SeedRain) %>%
-    mutate(SpeciesID = as.factor(SpeciesID))
-
-troll <- troll %>%
     mutate(h_realmax = hmax * dmax / (dmax + ah)) %>%
     select(-hmax, -ah)
 
