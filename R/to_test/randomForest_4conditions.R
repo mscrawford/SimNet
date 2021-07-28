@@ -31,6 +31,9 @@ randomForest_4conditions <- function(modelName,model,NoSpp,stage){
         varImpPlot(rf,main = title)#, cex=1.2)
         #dev.set(dev.next())
         while (!is.null(dev.list()))  dev.off()
-        print(rf$importance)
+        #print(rf$importance)
+        #If we want the rf$importance measures divided by their “standard errors”:
+        #See https://stackoverflow.com/questions/49235585/difference-between-importancerandom-forest-and-randomforestimportance
+        print(importance(rf))
         return(rf)
 }
