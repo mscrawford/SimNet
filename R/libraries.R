@@ -14,3 +14,9 @@ install.packages("rsample",dependencies = TRUE)
 install.packages("lmodel2",dependencies = TRUE)
 install.packages("infer",dependencies = TRUE)
 install.packages("scales",dependencies = TRUE)
+install.packages("party",dependencies = TRUE)
+
+# To use ggbiplot for PCA results visualization:
+install.packages("devtools",dependencies = TRUE)
+library(devtools)
+install_github("vqv/ggbiplot")
