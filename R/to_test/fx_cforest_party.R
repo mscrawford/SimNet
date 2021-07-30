@@ -15,7 +15,7 @@ fx_cforest_party <- function(modelName,model,NoSpp,stage){
             mutate_if(is.character, as.factor) %>%
             select(-Productivity,-SpeciesID, -Ninitial, -Stage, -Rep, -Year) 
         
-        train <- model %>% sample_frac(.50)
+        train <- model %>% sample_frac(.70)
         test <- anti_join(model, train, by = 'id')
         
         train <- train %>% select(-id)
@@ -25,29 +25,30 @@ fx_cforest_party <- function(modelName,model,NoSpp,stage){
                       ,data = as.data.frame(train)
 		      ,control = cforest_unbiased(mtry = 2, ntree = 501)
 		      )
-        pred <- data.frame(pred = predict(rf, test,OOB=TRUE))
-        title = paste("Correlation: ", round(cor(pred, test$Biomass)[[1]], 2),
-        #               "  |  mean squared error: ", round(mean(rf$mse), 2),
-        #               "  |  R-squared: ", round(mean(rf$rsq), 2),
-        sep = "")
+        pred <- data.frame(pred = predict(rf, newdata=test,OOB=TRUE))
+        title = paste("Correlation: ", round(cor(pred, test$Biomass)[[1]], 2)
+                      ,sep = "")
         set.seed(1987)
-	#Permutation importance:
+        #Permutation importance:
         PI <- varimp(rf)
-        #Conditional permutation importance:
-        CPI <- varimp(rf, conditional = TRUE)
         #Prepare data frame for plotting
         df1 <- as.data.frame(PI)
         df1$varnames <- rownames(df1)
         rownames(df1) <- NULL
+        df1 <- arrange(df1,PI)
         df1$var_categ <- c(1: dim(df1)[1])
         #Plot
+        lylim <- df1$PI[1]
+        lylim <- lylim - ((lylim**2)*.2)
+        hylim <- df1$PI[dim(df1)[1]]
+        hylim <- hylim + (hylim*.05)
         ggplot(df1, aes(x=reorder(varnames, PI)
                        ,y=PI
                        ,color=as.factor(var_categ))) +
                 geom_point(show.legend = FALSE) +
           geom_text(aes(label=sprintf("%.2f", PI))
-                    ,hjust=0,vjust=0,color="black",size=7
-                    ,angle = -90,show.legend = FALSE) +
+                    ,hjust=.5,vjust=-0.5,color="black",size=7.5
+                    ,show.legend = FALSE) + #,angle = -90) +
           geom_segment(aes(x=varnames,xend=varnames,y=0,yend=PI)
                        ,show.legend = FALSE) +
           scale_color_discrete(name="Variable Group") +
@@ -56,29 +57,39 @@ fx_cforest_party <- function(modelName,model,NoSpp,stage){
           theme_bw() +
           theme(panel.border = element_blank()
                 ,axis.line = element_line(colour = "black")
-                ,text = element_text(size = 22)
-                ,axis.text.x = element_text(size = 20)
-                ,axis.text.y = element_text(size = 20)) +
-                coord_flip() +
-                labs(title = title
-                     #,subtitle = ""
-                     #,caption = ""
-                     )
-        ggsave(paste0(tmp_dir,"/randomForest/",modelName,"_orig.pdf"))
+                ,text = element_text(size = 24)
+                ,axis.text.x = element_text(size = 24)
+                ,axis.text.y = element_text(size = 24)) +
+          lims(y=c(lylim,hylim)) +
+          coord_flip() +
+          labs(title = title
+               #,subtitle = ""
+               #,caption = ""
+               )
+        ggsave(file=paste0(tmp_dir,"/randomForest/",modelName,"_orig.pdf")
+               , width=15, height=7, dpi=300)
         while (!is.null(dev.list()))  dev.off()
+        #Conditional permutation importance:
+        set.seed(1987)
+        CPI <- varimp(rf, conditional = TRUE)
         #Prepare data frame for plotting
-	df <- as.data.frame(CPI)
-	df$varnames <- rownames(df)
-	rownames(df) <- NULL
-	df$var_categ <- c(1: dim(df)[1])
-	#Plot
-	ggplot(df, aes(x=reorder(varnames, CPI)
-	               ,y=CPI
-	               ,color=as.factor(var_categ))) +
-	        geom_point(show.legend = FALSE) +
+        df <- as.data.frame(CPI)
+        df$varnames <- rownames(df)
+        rownames(df) <- NULL
+        df <- arrange(df,CPI)
+        df$var_categ <- c(1: dim(df)[1])
+        #Plot
+        lylim <- df$CPI[1]
+        lylim <- lylim - ((lylim**2)*.2)
+        hylim <- df$CPI[dim(df)[1]]
+        hylim <- hylim + (hylim*.05)
+        #print(c(lylim,hylim))
+        ggplot(df, aes(x=reorder(varnames, CPI)
+                       ,y=CPI,color=as.factor(var_categ))) +
+          geom_point(show.legend = FALSE) +
 	        geom_text(aes(label=sprintf("%.2f", CPI))
-	                  ,hjust=0,vjust=0,color="black",size=7
-	                  ,angle = -90,show.legend = FALSE) +
+	                  ,hjust=.5,vjust=-0.5,color="black",size=7.5
+	                  ,show.legend = FALSE) +#,angle = -90) +
 	        geom_segment(aes(x=varnames,xend=varnames,y=0,yend=CPI)
 	                     ,show.legend = FALSE) +
 	        scale_color_discrete(name="Variable Group") +
@@ -87,12 +98,14 @@ fx_cforest_party <- function(modelName,model,NoSpp,stage){
 	        theme_bw() +
 	        theme(panel.border = element_blank()
 	              ,axis.line = element_line(colour = "black")
-	              ,text = element_text(size = 22)
-	              ,axis.text.x = element_text(size = 20)
-	              ,axis.text.y = element_text(size = 20)) +
+	              ,text = element_text(size = 24)
+	              ,axis.text.x = element_text(size = 24)
+	              ,axis.text.y = element_text(size = 24)) +
+          lims(y=c(lylim,hylim)) +
 	        coord_flip() +
 	        labs(title = title)
-	ggsave(paste0(tmp_dir,"/randomForest/",modelName,".pdf"))
+        ggsave(file=paste0(tmp_dir,"/randomForest/",modelName,".pdf")
+               , width=15, height=7, dpi=300)
         while (!is.null(dev.list()))  dev.off()
         return(rf)
 }
