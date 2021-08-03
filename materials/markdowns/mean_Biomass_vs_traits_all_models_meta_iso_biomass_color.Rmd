@@ -100,8 +100,6 @@ labNoSpp <- if (NoSpp == 32) "32-species mixture" else  "monoculture"
       model.032 <- model %>%
       filter(Ninitial == NoSpp,
              Year %in% c(100, 200)) %>% 
-             #100th year: last step of Metacommunity stage 
-             #200th year: last step of Isolation stage
       group_by_at(g_by) %>%
       summarise(Biomass = mean(Biomass)) %>%
       filter(Biomass == 0) %>%
@@ -121,7 +119,8 @@ labNoSpp <- if (NoSpp == 32) "32-species mixture" else  "monoculture"
                position=position_jitter(h=0.01, w=0.05)) +
     facet_grid(~fct_relevel(Stage, 'Metacommunity', 'Isolation')) +
     scale_color_viridis() +
-    labs(color = paste0("Log mean biomass ",labNoSpp),
+    labs(size = "Log mean biomass",
+	 color = "Log mean biomass",
          x = xlab,
          y = ylab) +
     theme_bw() +

@@ -38,8 +38,8 @@ fx_cforest_party <- function(modelName,model,NoSpp,stage){
         df1 <- arrange(df1,PI)
         df1$var_categ <- c(1: dim(df1)[1])
         #Plot
-        lylim <- df1$PI[1]
-        lylim <- lylim - ((lylim**2)*.2)
+        #lylim <- df1$PI[1]
+        #lylim <- lylim - ((lylim**2)*.2)
         hylim <- df1$PI[dim(df1)[1]]
         hylim <- hylim + (hylim*.05)
         ggplot(df1, aes(x=reorder(varnames, PI)
@@ -60,7 +60,7 @@ fx_cforest_party <- function(modelName,model,NoSpp,stage){
                 ,text = element_text(size = 24)
                 ,axis.text.x = element_text(size = 24)
                 ,axis.text.y = element_text(size = 24)) +
-          lims(y=c(lylim,hylim)) +
+          lims(y=c(NA,hylim)) +
           coord_flip() +
           labs(title = title
                #,subtitle = ""
@@ -79,8 +79,8 @@ fx_cforest_party <- function(modelName,model,NoSpp,stage){
         df <- arrange(df,CPI)
         df$var_categ <- c(1: dim(df)[1])
         #Plot
-        lylim <- df$CPI[1]
-        lylim <- lylim - ((lylim**2)*.2)
+        #lylim <- df$CPI[1]
+        #lylim <- lylim - ((lylim**2)*.2)
         hylim <- df$CPI[dim(df)[1]]
         hylim <- hylim + (hylim*.05)
         #print(c(lylim,hylim))
@@ -101,7 +101,7 @@ fx_cforest_party <- function(modelName,model,NoSpp,stage){
 	              ,text = element_text(size = 24)
 	              ,axis.text.x = element_text(size = 24)
 	              ,axis.text.y = element_text(size = 24)) +
-          lims(y=c(lylim,hylim)) +
+          lims(y=c(NA,hylim)) +
 	        coord_flip() +
 	        labs(title = title)
         ggsave(file=paste0(tmp_dir,"/randomForest/",modelName,".pdf")
