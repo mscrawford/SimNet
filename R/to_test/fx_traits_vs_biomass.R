@@ -17,18 +17,23 @@ fx_traits_vs_biomass <- function(plotName,model,NoSpp,stage,g_by,trait1,trait2,x
 
       model.032 <- model %>%
       filter(Biomass == 0)
-          
+      
+      jf1 <- unlist(model[trait1])
+      jf1 <- median(jf1)*0.003
+      jf2 <- unlist(model[trait2])
+      jf2 <- median(jf2)*0.003
+
   p1 <- ggplot() +
     geom_point(data = model.32,
                aes_string(x = trait1,
                           y = trait2,
                           color = "Biomass", alpha = 0.7,
                           size = "Biomass"),
-               position=position_jitter(h=0.01, w=0.05)) +
+               position=position_jitter(h=jf1, w=jf2)) +
     geom_point(data = model.032, shape = 4,
                aes_string(x = trait1,
                           y = trait2),
-               position=position_jitter(h=0.01, w=0.05)) +
+               position=position_jitter(h=jf1, w=jf2)) +
     scale_color_viridis() +
     labs(size = "Log mean biomass",
 	 color = "Log mean biomass",
