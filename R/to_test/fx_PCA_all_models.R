@@ -13,7 +13,7 @@ fx_PCA_all_models <- function(modelName,model,NoSpp,stage){
             mutate_if(is.character, as.factor) %>%
             select(-Productivity,-SpeciesID, -Ninitial, -Stage, -Rep, -Year) 
 
-        model.pca <- prcomp(model, center = TRUE,scale. = TRUE)
+        model.pca <- prcomp(model, center=TRUE, scale.=TRUE)
         print(summary(model.pca))
         
         ggbiplot(model.pca)
