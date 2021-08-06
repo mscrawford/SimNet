@@ -11,7 +11,7 @@ fx_PCA_all_models <- function(modelName,model,NoSpp,stage){
             filter(Ninitial == NoSpp,
                    Year %in% stage) %>%
             mutate_if(is.character, as.factor) %>%
-            select(-Productivity,-SpeciesID, -Ninitial, -Stage, -Rep, -Year) 
+            select(-Productivity,-SpeciesID, -Ninitial, -Stage, -Rep, -Year, -Biomass) 
 
         model.pca <- prcomp(model, center=TRUE, scale.=TRUE)
         print(summary(model.pca))

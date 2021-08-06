@@ -73,14 +73,28 @@ troll <- models$Forest2 %>%
     ungroup() %>% # There shouldn't be groups anyways
     mutate(Biomass = scales::rescale(Biomass,
                                      to = c(0, 100)))%>%
-    select(-Model, -SeedRain) %>%
-    mutate(h_realmax = hmax * dmax / (dmax + ah)) %>%
-    select(-hmax, -ah)
+    select(-Model, -SeedRain)
 
 F2C1 <- fx_PCA_all_models("F2C1",troll,1,meta)
 F2C2 <- fx_PCA_all_models("F2C2",troll,1,iso)
 F2C3 <- fx_PCA_all_models("F2C3",troll,32,meta)
 F2C4 <- fx_PCA_all_models("F2C4",troll,32,iso)
+
+### Forest2 (TROLL)
+source(paste0(scripts_dir, "/to_test/readTROLL.R"))
+
+troll <- models$Forest2 %>%
+    ungroup() %>% # There shouldn't be groups anyways
+    mutate(Biomass = scales::rescale(Biomass,
+                                     to = c(0, 100)))%>%
+    select(-Model, -SeedRain) %>%
+    mutate(h_realmax = hmax * dmax / (dmax + ah)) %>%
+    select(-hmax, -ah, -dmax)
+
+F2C1 <- fx_PCA_all_models("F2C1_hrm",troll,1,meta)
+F2C2 <- fx_PCA_all_models("F2C2_hrm",troll,1,iso)
+F2C3 <- fx_PCA_all_models("F2C3_hrm",troll,32,meta)
+F2C4 <- fx_PCA_all_models("F2C4_hrm",troll,32,iso)
 
 ### Dryland (Bjoern)
 source(paste0(scripts_dir, "/to_test/readBjoern.R"))
