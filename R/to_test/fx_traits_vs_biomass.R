@@ -69,14 +69,14 @@ fx_traits_vs_biomass_jitter <- function(plotName,model,NoSpp,stage,g_by,trait1,t
     geom_point(data = model.32,
                aes_string(x = trait1,
                           y = trait2,
-                          color = "Biomass", alpha = 0.7,
+                          color = "Biomass", alpha = 0.8,
                           size = "Biomass"),
                position=position_jitter(h=jf2, w=jf1)) +
     geom_point(data = model.032, shape = 4,
                aes_string(x = trait1,
                           y = trait2),
                position=position_jitter(h=jf2, w=jf1)) +
-    scale_color_viridis() +
+    scale_colour_viridis(direction = -1) +
     labs(size = "Log mean biomass",
 	 color = "Log mean biomass",
          x = xlab,

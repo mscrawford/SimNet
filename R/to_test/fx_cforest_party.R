@@ -15,6 +15,7 @@ fx_cforest_party <- function(modelName,model,NoSpp,stage){
             mutate_if(is.character, as.factor) %>%
             select(-Productivity,-SpeciesID, -Ninitial, -Stage, -Rep, -Year) 
         
+        set.seed(1987)
         train <- model %>% sample_frac(.70)
         test <- anti_join(model, train, by = 'id')
         
@@ -28,6 +29,12 @@ fx_cforest_party <- function(modelName,model,NoSpp,stage){
         pred <- data.frame(pred = predict(rf, newdata=test,OOB=TRUE))
         title = paste("Correlation: ", round(cor(pred, test$Biomass)[[1]], 2)
                       ,sep = "")
+        # ct <- ctree(Biomass ~ .
+        #             ,data = as.data.frame(train))
+        # print(ct)
+        # tr <- treeresponse(ct, newdata=test)
+        # print(tr)
+        
         set.seed(1987)
         #Permutation importance:
         PI <- varimp(rf)
@@ -105,6 +112,7 @@ fx_cforest_party <- function(modelName,model,NoSpp,stage){
 	        coord_flip() +
 	        labs(title = title)
         ggsave(file=paste0(tmp_dir,"/randomForest/",modelName,".pdf")
+        #ggsave(file=paste0(tmp_dir,"/cforest_16spp/",modelName,".pdf")
                , width=15, height=7, dpi=300)
         while (!is.null(dev.list()))  dev.off()
         return(rf)

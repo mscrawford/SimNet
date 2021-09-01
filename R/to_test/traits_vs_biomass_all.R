@@ -79,10 +79,10 @@ g_by <- c("SpeciesID", "Year", "Stage", "PC1score", "PC2score")
 lab1 <- "PC1score (associated with fast-slow lifecycle)"#plant height)"
 lab2 <- "PC2score (associated with tree stature)"# LMA -leaf mass per area)"
 
-F1C1 <- fx_traits_vs_biomass_jitter("F1C1",PPA,1,meta,g_by,"PC2score","PC1score",lab1,lab2)
-F1C2 <- fx_traits_vs_biomass_jitter("F1C2",PPA,1,iso,g_by,"PC2score","PC1score",lab1,lab2)
-F1C3 <- fx_traits_vs_biomass_jitter("F1C3",PPA,32,meta,g_by,"PC2score","PC1score",lab1,lab2)
-F1C4 <- fx_traits_vs_biomass_jitter("F1C4",PPA,32,iso,g_by,"PC2score","PC1score",lab1,lab2)
+F1C1 <- fx_traits_vs_biomass_jitter("F1C1",PPA,1,meta,g_by,"PC2score","PC1score",lab2,lab1)
+F1C2 <- fx_traits_vs_biomass_jitter("F1C2",PPA,1,iso,g_by,"PC2score","PC1score",lab2,lab1)
+F1C3 <- fx_traits_vs_biomass_jitter("F1C3",PPA,32,meta,g_by,"PC2score","PC1score",lab2,lab1)
+F1C4 <- fx_traits_vs_biomass_jitter("F1C4",PPA,32,iso,g_by,"PC2score","PC1score",lab2,lab1)
 
 ### Forest2 (TROLL)
 source(paste0(scripts_dir, "/to_test/readTROLL.R"))
