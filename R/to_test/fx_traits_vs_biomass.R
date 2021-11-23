@@ -76,7 +76,7 @@ fx_traits_vs_biomass_jitter <- function(plotName,model,NoSpp,stage,g_by,trait1,t
                aes_string(x = trait1,
                           y = trait2),
                position=position_jitter(h=jf2, w=jf1)) +
-    scale_colour_viridis(direction = -1) +
+    scale_colour_viridis() + #direction = -1) +
     labs(size = "Log mean biomass",
 	 color = "Log mean biomass",
          x = xlab,

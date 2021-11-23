@@ -1,13 +1,16 @@
 library(party)
 library(ggplot2)
 library(dplyr)
+library(scales)
+library(RColorBrewer)
 set.seed(1987)
 
-meta = seq(80, 100)
-iso = seq(180, 200)
+meta <- seq(80, 100)
+iso <- seq(180, 200)
 
-fx_cforest_party <- function(modelName,model,NoSpp,stage){
-	print(modelName)
+fx_single_cond <- function(model,NoSpp,stage){
+	print("Single cond")
+	sizeT <- c("abmi","Vi","MaxMass","PC2score","dmax","ah","hmax","h_realmax","maxSize")
         model <- model %>%
             filter(Ninitial == NoSpp,
                    Year %in% stage) %>%
@@ -27,93 +30,84 @@ fx_cforest_party <- function(modelName,model,NoSpp,stage){
 		      ,control = cforest_unbiased(mtry = 2, ntree = 501)
 		      )
         pred <- data.frame(pred = predict(rf, newdata=test,OOB=TRUE))
-        title = paste("Correlation: ", round(cor(pred, test$Biomass)[[1]], 2)
-                      ,sep = "")
-        # ct <- ctree(Biomass ~ .
-        #             ,data = as.data.frame(train))
-        # print(ct)
-        # tr <- treeresponse(ct, newdata=test)
-        # print(tr)
+	corr <- round(cor(pred, test$Biomass)[[1]], 2)
+        title = paste("Correlation: ", corr,sep = "")
         
         set.seed(1987)
-        #Permutation importance:
-        PI <- varimp(rf)
-        #Prepare data frame for plotting
-        df1 <- as.data.frame(PI)
-        df1$varnames <- rownames(df1)
-        rownames(df1) <- NULL
-        df1 <- arrange(df1,PI)
-        df1$var_categ <- c(1: dim(df1)[1])
-        #Plot
-        #lylim <- df1$PI[1]
-        #lylim <- lylim - ((lylim**2)*.2)
-        hylim <- df1$PI[dim(df1)[1]]
-        hylim <- hylim + (hylim*.05)
-        ggplot(df1, aes(x=reorder(varnames, PI)
-                       ,y=PI
-                       ,color=as.factor(var_categ))) +
-                geom_point(show.legend = FALSE) +
-          geom_text(aes(label=sprintf("%.2f", PI))
-                    ,hjust=.5,vjust=-0.5,color="black",size=7.5
-                    ,show.legend = FALSE) + #,angle = -90) +
-          geom_segment(aes(x=varnames,xend=varnames,y=0,yend=PI)
-                       ,show.legend = FALSE) +
-          scale_color_discrete(name="Variable Group") +
-          ylab("Origional permutation importance") +
-          xlab("Trait") +
-          theme_bw() +
-          theme(panel.border = element_blank()
-                ,axis.line = element_line(colour = "black")
-                ,text = element_text(size = 24)
-                ,axis.text.x = element_text(size = 24)
-                ,axis.text.y = element_text(size = 24)) +
-          lims(y=c(NA,hylim)) +
-          coord_flip() +
-          labs(title = title
-               #,subtitle = ""
-               #,caption = ""
-               )
-        ggsave(file=paste0(tmp_dir,"/randomForest/",modelName,"_orig.pdf")
-               , width=15, height=7, dpi=300)
-        while (!is.null(dev.list()))  dev.off()
         #Conditional permutation importance:
         set.seed(1987)
         CPI <- varimp(rf, conditional = TRUE)
         #Prepare data frame for plotting
-        df <- as.data.frame(CPI)
-        df$varnames <- rownames(df)
-        rownames(df) <- NULL
-        df <- arrange(df,CPI)
-        df$var_categ <- c(1: dim(df)[1])
-        #Plot
-        #lylim <- df$CPI[1]
-        #lylim <- lylim - ((lylim**2)*.2)
-        hylim <- df$CPI[dim(df)[1]]
-        hylim <- hylim + (hylim*.05)
-        #print(c(lylim,hylim))
-        ggplot(df, aes(x=reorder(varnames, CPI)
-                       ,y=CPI,color=as.factor(var_categ))) +
-          geom_point(show.legend = FALSE) +
-	        geom_text(aes(label=sprintf("%.2f", CPI))
-	                  ,hjust=.5,vjust=-0.5,color="black",size=7.5
-	                  ,show.legend = FALSE) +#,angle = -90) +
-	        geom_segment(aes(x=varnames,xend=varnames,y=0,yend=CPI)
-	                     ,show.legend = FALSE) +
-	        scale_color_discrete(name="Variable Group") +
-	        ylab("Conditional permutation importance") +
-	        xlab("Trait") +
-	        theme_bw() +
-	        theme(panel.border = element_blank()
-	              ,axis.line = element_line(colour = "black")
-	              ,text = element_text(size = 24)
-	              ,axis.text.x = element_text(size = 24)
-	              ,axis.text.y = element_text(size = 24)) +
-          lims(y=c(NA,hylim)) +
-	        coord_flip() +
-	        labs(title = title)
-        ggsave(file=paste0(tmp_dir,"/randomForest/",modelName,".pdf")
-        #ggsave(file=paste0(tmp_dir,"/cforest_16spp/",modelName,".pdf")
-               , width=15, height=7, dpi=300)
-        while (!is.null(dev.list()))  dev.off()
-        return(rf)
+        rf_df <- as.data.frame(CPI)
+        rf_df$varnames <- rownames(rf_df)
+        rownames(rf_df) <- NULL
+	rf_df$type <- ifelse(rf_df$varnames %in% sizeT,"Size","Resource acq.")
+        rf_df <- arrange(rf_df,desc(CPI))
+        rf_df$var_categ <- c(1: dim(rf_df)[1])
+	cond <- paste(NoSpp,stage[1])
+	rf_df$condition <- rep(cond,times=dim(rf_df)[1])
+	zeros <- data.frame(rep(0,times=dim(rf_df)[2]))
+	rf_df[nrow(rf_df) + 1,] = rep(0,times=dim(rf_df)[2])
+#	rf_df$sCPI <- scales::rescale(rf_df$CPI, to = c(corr,2*corr))
+#	rf_df %>%
+#		mutate(sCPI = log(sCPI))
+	rf_df$sCPI <- scales::rescale(rf_df$CPI, to = c(0,corr))
+	rf_df <- head(rf_df,-1)
+        return(rf_df)
+}
+
+fx_cforest_df <- function(C1,C2,C3,C4,modelName){
+	print(paste(modelName,"_4conditions_df"))
+	rf_df <- rbind(C1,C2,C3,C4)
+	rf_df$mName <- rep(modelName,times=dim(rf_df)[1])
+	fileName = paste0(tmp_dir,"/randomForest/",modelName,".Rda")
+	saveRDS(rf_df,file=fileName)
+	return(rf_df)}
+
+fx_plot <- function(rf_df,modelName){
+	print(paste(modelName,"_plot"))
+	rf_df <- rf_df %>%
+	mutate(condition = recode(condition, "1 80" = "Monoculture-Metacommunity"
+				  ,"1 180" = "Monoculture-Isolation"
+				  ,"32 80" = "Mixture-Metacommunity"
+				  ,"32 180" = "Mixture-Isolation"))        
+	
+	llim <- (min(rf_df$sCPI))
+        llim <- llim-(llim*.05)
+        hlim <- (max(rf_df$sCPI))
+        hlim <- hlim+(hlim*.1)
+
+	plot <- ggplot(rf_df, aes(x=reorder(varnames, var_categ), y=sCPI, fill=type)) +
+	#plot <- ggplot(rf_df, aes(x=condition, y=sCPI, fill=reorder(varnames, var_categ))) +
+	    #ggplot(rf_df, aes(fill=condition, y=sCPI, x=reorder(varnames, sCPI))) +
+	    geom_bar(position='dodge',stat='identity') +
+	            geom_text(aes(label=scientific(CPI, digits = 2))
+	    		  ,position = position_dodge(width = 1)
+	                      ,hjust=0,vjust=0.2,color="black"#,size=7.5
+	                      ,show.legend = FALSE,angle = 45) +
+	    ylab("Conditional permutation importance, scaled") +
+	    xlab("Traits") +
+	    scale_fill_brewer(palette = "Set1",name = "Trait type") +
+	    scale_color_brewer(palette = "Set1") +
+	    ylim(NA,hlim) +
+	    facet_grid(~condition, 
+             space = "free_x") + # Let the width of facets vary and force all bars to have the same width.
+	    theme_bw() +
+	    theme(text = element_text(size = 20),legend.position = "top",
+	    axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+	ggsave(file=paste0(tmp_dir,"/randomForest/",modelName,".pdf")
+	       , width=15, height=7, dpi=300)
+	while (!is.null(dev.list()))  dev.off()
+        return(plot)
+}
+
+fx_cforest <- function(model,modelName){
+	print(paste(modelName,"_fx_cforest"))
+	C1 <- fx_single_cond(model,1,meta)
+	C2 <- fx_single_cond(model,1,iso)
+	C3 <- fx_single_cond(model,32,meta)
+	C4 <- fx_single_cond(model,32,iso)
+        rf_df <- fx_cforest_df(C1,C2,C3,C4,modelName)
+	plot <- fx_plot(rf_df,modelName)
+        return(plot)
 }
