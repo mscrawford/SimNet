@@ -53,8 +53,8 @@ model_runs <- map(.x = model_runs,
                                  SpeciesID = as.character(SpeciesID),
                                  Stage = as.factor(Stage),
                                  Year = as.numeric(Year),
-                                 Biomass = as.numeric(Biomass))#,
-                                 #Productivity = as.numeric(Productivity))
+                                 Biomass = as.numeric(Biomass),
+                                 Productivity = as.numeric(Productivity))
 
                       .x <- .x %>%
                           mutate(Stage = recode(Stage,

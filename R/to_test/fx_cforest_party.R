@@ -16,7 +16,7 @@ fx_single_cond <- function(model,NoSpp,stage){
                    Year %in% stage) %>%
             mutate(id = row_number()) %>%
             mutate_if(is.character, as.factor) %>%
-            select(-Productivity,-SpeciesID, -Ninitial, -Stage, -Rep, -Year) 
+            select(-SpeciesID, -Ninitial, -Stage, -Rep, -Year) 
         
         set.seed(1987)
         train <- model %>% sample_frac(.70)
@@ -30,13 +30,17 @@ fx_single_cond <- function(model,NoSpp,stage){
 		      ,control = cforest_unbiased(mtry = 2, ntree = 501)
 		      )
         pred <- data.frame(pred = predict(rf, newdata=test,OOB=TRUE))
-	corr <- round(cor(pred, test$Biomass)[[1]], 2)
+        #print(pred)
+        #print(test$Biomass)
+	corr <- round(cor(pred, test$Biomass)[[1]], 2) #, method = "kendall" #pearson (default)
         title = paste("Correlation: ", corr,sep = "")
-        
+        print(rf)
+        # print(pred)
         set.seed(1987)
         #Conditional permutation importance:
         set.seed(1987)
         CPI <- varimp(rf, conditional = TRUE)
+        print(CPI)
         #Prepare data frame for plotting
         rf_df <- as.data.frame(CPI)
         rf_df$varnames <- rownames(rf_df)
@@ -46,13 +50,12 @@ fx_single_cond <- function(model,NoSpp,stage){
         rf_df$var_categ <- c(1: dim(rf_df)[1])
 	cond <- paste(NoSpp,stage[1])
 	rf_df$condition <- rep(cond,times=dim(rf_df)[1])
-	zeros <- data.frame(rep(0,times=dim(rf_df)[2]))
-	rf_df[nrow(rf_df) + 1,] = rep(0,times=dim(rf_df)[2])
-#	rf_df$sCPI <- scales::rescale(rf_df$CPI, to = c(corr,2*corr))
-#	rf_df %>%
-#		mutate(sCPI = log(sCPI))
-	rf_df$sCPI <- scales::rescale(rf_df$CPI, to = c(0,corr))
-	rf_df <- head(rf_df,-1)
+#	zeros <- data.frame(rep(0,times=dim(rf_df)[2]))
+#	rf_df[nrow(rf_df) + 1,] = rep(0,times=dim(rf_df)[2])
+#	rf_df$sCPI <- scales::rescale(rf_df$CPI, to = c(0,corr))
+#	rf_df <- head(rf_df,-1)
+	rf_df <- rf_df %>% mutate(sCPI = (CPI*corr/sum(CPI)))
+	print(paste0("corr=",corr,"; sum of scaled importance=",sum(rf_df$sCPI)))
         return(rf_df)
 }
 

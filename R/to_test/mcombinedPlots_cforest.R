@@ -166,10 +166,10 @@ d6 <- rf_df
 
 # All models
 all_d <- rbind(d1,d2,d3,d4,d5,d5h,d6) %>%
-mutate(condition = recode(condition, "1 80" = "Monoculture-Metacommunity"
-			  ,"1 180" = "Monoculture-Isolation"
-			  ,"32 80" = "Mixture-Metacommunity"
-			  ,"32 180" = "Mixture-Isolation")
+mutate(condition = recode(condition, "1 80" = "Mono.-Meta."
+			  ,"1 180" = "Mono.-Iso."
+			  ,"32 80" = "Mix.-Meta."
+			  ,"32 180" = "Mix.-Iso.")
        ,mName = recode(mName, "Grass1_m" = "Grass 1"
 		     ,"Grass2_m" = "Grass 2"
 		     ,"Grass3_m" = "Grass 3"
@@ -179,24 +179,27 @@ mutate(condition = recode(condition, "1 80" = "Monoculture-Metacommunity"
 		     ,"Dryland_m" = "Dryland")
 )
 
-ggplot(all_d, aes(x=reorder(varnames, var_categ), y=sCPI, fill=type)) +
+ggplot(all_d, aes(x=reorder(varnames, CPI), y=sCPI, fill=type)) +
+#ggplot(all_d, aes(x=reorder(varnames, var_categ), y=sCPI, fill=type)) +
 #ggplot(all_d, aes(x=varnames, y=sCPI, fill=type)) +
     geom_bar(position='dodge',stat='identity') +
-            geom_text(aes(label=scientific(CPI, digits = 2),size=10)
-    		  ,position = position_dodge(width = 1)
-                      ,hjust=0,vjust=0.2,color="black",size=2
-                      ,show.legend = FALSE,angle = 90) +
+#            geom_text(aes(label=scientific(CPI, digits = 2),size=10)
+#    		  ,position = position_dodge(width = 1)
+#                      ,hjust=0,vjust=0.2,color="black",size=2
+#                      ,show.legend = FALSE,angle = 90) +
     ylab("Conditional permutation importance, scaled to correlation") +
     xlab("Traits") +
     scale_fill_brewer(palette = "Set1",name = "Trait type") +
     scale_color_brewer(palette = "Set1") +
-    ylim(NA,1.25) +
+#    ylim(NA,1) +
+    scale_y_continuous(limits = c(0, 1), breaks = seq(0, 1, by = 0.5)) + 
+#    ylim(NA,1.25) +
     facet_grid(condition ~ mName, scales = "free_x", 
      space = "free_x") + # Let the width of facets vary and force all bars to have the same width.
     theme_bw() +
-    theme(text = element_text(size = 8),legend.position = "top",
+    theme(text = element_text(size = 14),legend.position = "top",
     axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
 ggsave(file=paste0(tmp_dir,"/randomForest/all_models_cforest_grid.pdf")
-#       , width=15, height=7, dpi=300
+       , width=9.5, height=7, dpi=300
 )
 while (!is.null(dev.list()))  dev.off()

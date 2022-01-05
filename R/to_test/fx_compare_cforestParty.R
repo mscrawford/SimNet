@@ -13,7 +13,7 @@ fx_cforest_party <- function(modelName,model,NoSpp,stage){
                    Year %in% stage) %>%
             mutate(id = row_number()) %>%
             mutate_if(is.character, as.factor) %>%
-            select(-Productivity,-SpeciesID, -Ninitial, -Stage, -Rep, -Year) 
+            select(-SpeciesID, -Ninitial, -Stage, -Rep, -Year) 
         
         set.seed(1987)
         train <- model %>% sample_frac(.70)

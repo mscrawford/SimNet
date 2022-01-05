@@ -35,7 +35,8 @@ rm(d, IBC_grass, remove_cols)
 # -------------------------------------------------------------------------
 # General model formatting
 
-model_runs <- list(IBC_grass.NDD)
+#model_runs <- list(IBC_grass.NDD)
+model_runs <- list(IBC_grass.noNDD)
 
 model_runs <- map(.x = model_runs,
                   .f = ~ {
@@ -47,8 +48,8 @@ model_runs <- map(.x = model_runs,
                                  SpeciesID = as.character(SpeciesID),
                                  Stage = as.factor(Stage),
                                  Year = as.numeric(Year),
-                                 Biomass = as.numeric(Biomass))#,
-                                 #Productivity = as.numeric(Productivity))
+                                 Biomass = as.numeric(Biomass),
+                                 Productivity = as.numeric(Productivity))
 
                       .x <- .x %>%
                           mutate(Stage = recode(Stage,
@@ -78,5 +79,4 @@ models <- map2(.x = model_runs,
 
 names(models) = map(.x = models,
                     .f = ~ unique(.x$Model))
-
 setwd(base_dir)

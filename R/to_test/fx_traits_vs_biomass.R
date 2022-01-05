@@ -82,14 +82,14 @@ fx_traits_vs_biomass_jitter <- function(plotName,model,NoSpp,stage,g_by,trait1,t
          x = xlab,
          y = ylab) +
     theme_bw() +
-    theme(aspect.ratio = 1)
+    theme(aspect.ratio = 1,text = element_text(size = 18))
   
   filename <- paste0(plotName,".pdf")
   path <- paste0(tmp_dir,"/traits_vs_biomass/")
   ggsave(filename = filename
          ,path = path
          ,plot = p1
-         ,height = 12
+         ,height = 13
          ,width = 19
          ,units = "cm")
   return(p1)
