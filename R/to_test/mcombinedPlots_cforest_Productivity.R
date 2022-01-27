@@ -11,82 +11,73 @@ raw_data_dir      <- paste0(base_dir, "/data/raw")
 source(paste0(scripts_dir, "/to_test/fx_cforest_party.R"))
 
 ### Grass1 (Adam's model)
-#source(paste0(scripts_dir, "/to_test/readAdam.R"))
-#
-#adam <- models$Grass1 %>%
-#ungroup() %>% # There shouldn't be groups anyways
-#mutate(Biomass = scales::rescale(Biomass,
-#                                 to = c(0, 100)))%>%
-#select(-Model, -SeedRain)
-#adam_B <- adam %>% select(-Productivity)
-#adam_P <- adam %>% select(-Biomass)
-#setnames(adam_P, "Productivity", "Biomass")
-#
-##Biomass
-#model<-adam_B
-#C3 <- fx_single_cond(model,32,meta)
-#C4 <- fx_single_cond(model,32,iso)
-## remove traits with negative importance values:
-#model <- subset(model, select = -pNi)
-#C1 <- fx_single_cond(model,1,meta)
-#C2 <- fx_single_cond(model,1,iso)
+source(paste0(scripts_dir, "/to_test/readAdam.R"))
+
+adam <- models$Grass1 %>%
+ select(-Model, -SeedRain)
+adam_B <- adam %>% select(-Productivity)
+adam_P <- adam %>% select(-Biomass)
+setnames(adam_P, "Productivity", "Biomass")
+
+#Biomass
+model<-adam_B
+C3 <- fx_single_cond(model,32,meta)
+C4 <- fx_single_cond(model,32,iso)
+# remove traits with negative importance values:
+model <- subset(model, select = -pNi)
+C1 <- fx_single_cond(model,1,meta)
+C2 <- fx_single_cond(model,1,iso)
 
 modelName = "Grass1_m"
 fileName = paste0(tmp_dir,"/randomForest/",modelName,".Rda")
-#rf_df <- fx_cforest_df(C1,C2,C3,C4,modelName)
-rf_df <- readRDS(fileName)
-#p1 <- fx_plot(rf_df,modelName)
+rf_df <- fx_cforest_df(C1,C2,C3,C4,modelName)
+#rf_df <- readRDS(fileName)
+p1 <- fx_plot(rf_df,modelName)
 d1 <- rf_df
 
-##Productivity
-#model<-adam_P
-#C3 <- fx_single_cond(model,32,meta)
-#C4 <- fx_single_cond(model,32,iso)
-#model <- subset(model, select = -pNi)
-#C1 <- fx_single_cond(model,1,meta)
-#C2 <- fx_single_cond(model,1,iso)
+#Productivity
+model<-adam_P
+C3 <- fx_single_cond(model,32,meta)
+C4 <- fx_single_cond(model,32,iso)
+model <- subset(model, select = -pNi)
+C1 <- fx_single_cond(model,1,meta)
+C2 <- fx_single_cond(model,1,iso)
 
 modelName = "Grass1_m_P"
 fileName = paste0(tmp_dir,"/randomForest/",modelName,".Rda")
-#rf_df <- fx_cforest_df(C1,C2,C3,C4,modelName)
-rf_df <- readRDS(fileName)
-#p1 <- fx_plot(rf_df,modelName)
+rf_df <- fx_cforest_df(C1,C2,C3,C4,modelName)
+#rf_df <- readRDS(fileName)
+p1 <- fx_plot(rf_df,modelName)
 d1_P <- rf_df
 
 ### Grass2 (Lindsay's model)
-#source(paste0(scripts_dir, "/to_test/readLindsay.R"))
-#
-#lindsay <- models$Grass2%>%
-#   ungroup() %>% # There shouldn't be groups anyways
-#   mutate(Biomass = scales::rescale(Biomass,
-#                                    to = c(0, 100)))%>%
-#   select(-Model, -SeedRain)
-# lindsay_B <- lindsay %>% select(-Productivity)
-# lindsay_P <- lindsay %>% select(-Biomass)
-# setnames(lindsay_P, "Productivity", "Biomass")
+source(paste0(scripts_dir, "/to_test/readLindsay.R"))
+
+lindsay <- models$Grass2%>%
+   select(-Model, -SeedRain)
+ lindsay_B <- lindsay %>% select(-Productivity)
+ lindsay_P <- lindsay %>% select(-Biomass)
+ setnames(lindsay_P, "Productivity", "Biomass")
 
 #Biomass
 modelName = "Grass2_m"
 fileName = paste0(tmp_dir,"/randomForest/",modelName,".Rda")
-#p2 <- fx_cforest(lindsay_B,modelName)
+p2 <- fx_cforest(lindsay_B,modelName)
 rf_df <- readRDS(fileName)
 d2 <- rf_df
 
 #Productivity
 modelName = "Grass2_m_P"
 fileName = paste0(tmp_dir,"/randomForest/",modelName,".Rda")
-#p2 <- fx_cforest(lindsay_P,modelName)
+p2 <- fx_cforest(lindsay_P,modelName)
 rf_df <- readRDS(fileName)
 d2_P <- rf_df
 
 ### Grass3 (IBC-grass)
 source(paste0(scripts_dir, "/to_test/readIBC.R"))
 
-#IBC_grass <- models$Grass3 %>%
-IBC_grass <- models$IBC_grass.noNDD %>%
- ungroup() %>% # There shouldn't be groups anyways
- mutate(Biomass = scales::rescale(Biomass,
-                                  to = c(0, 100)))%>%
+IBC_grass <- models$Grass3 %>%
+#IBC_grass <- models$IBC_grass.noNDD %>%
  select(Rep, Ninitial, SpeciesID, Year, Stage, Productivity, Biomass, LMR, MaxMass, Gmax, SLA, meanSpacerLength)
  IBC_grass_B <- IBC_grass %>% select(-Productivity)
  IBC_grass_P <- IBC_grass %>% select(-Biomass)
@@ -100,7 +91,8 @@ model<-subset(model, select=c(-SLA, -meanSpacerLength))
 C1 <- fx_single_cond(model,1,meta)
 C2 <- fx_single_cond(model,1,iso)
 
-modelName = "Grass3_m_noNDD"
+modelName = "Grass3_m"
+#modelName = "Grass3_m_noNDD"
 fileName = paste0(tmp_dir,"/randomForest/",modelName,".Rda")
 rf_df <- fx_cforest_df(C1,C2,C3,C4,modelName)
 #rf_df <- readRDS(fileName)
@@ -115,7 +107,8 @@ model<-subset(model, select=c(-SLA, -meanSpacerLength))
 C1 <- fx_single_cond(model,1,meta)
 C2 <- fx_single_cond(model,1,iso)
 
-modelName = "Grass3_m_P_noNDD"
+modelName = "Grass3_m_P"
+#modelName = "Grass3_m_P_noNDD"
 fileName = paste0(tmp_dir,"/randomForest/",modelName,".Rda")
 rf_df <- fx_cforest_df(C1,C2,C3,C4,modelName)
 #rf_df <- readRDS(fileName)
@@ -123,82 +116,73 @@ p3 <- fx_plot(rf_df,modelName)
 d3_P <- rf_df
 
 ### Forest1 (PPA)
-#source(paste0(scripts_dir, "/to_test/readPPA.R"))
-#
-#PPA <- models$Forest1 %>%
-# ungroup() %>% # There shouldn't be groups anyways
-# mutate(Biomass = scales::rescale(Biomass,
-#                                  to = c(0, 100)))%>%
-# select(-Model, -SeedRain)
-# PPA_B <- PPA %>% select(-Productivity)
-# PPA_P <- PPA %>% select(-Biomass)
-# setnames(PPA_P, "Productivity", "Biomass")
-#
-##Biomass
+source(paste0(scripts_dir, "/to_test/readPPA.R"))
+
+PPA <- models$Forest1 %>%
+ select(-Model, -SeedRain)
+ PPA_B <- PPA %>% select(-Productivity)
+ PPA_P <- PPA %>% select(-Biomass)
+ setnames(PPA_P, "Productivity", "Biomass")
+
+#Biomass
 modelName = "Forest1_m"
 fileName = paste0(tmp_dir,"/randomForest/",modelName,".Rda")
-#p4 <- fx_cforest(PPA_B,modelName)
+p4 <- fx_cforest(PPA_B,modelName)
 rf_df <- readRDS(fileName)
 d4 <- rf_df
 
 #Productivity
 modelName = "Forest1_m_P"
 fileName = paste0(tmp_dir,"/randomForest/",modelName,".Rda")
-#p4 <- fx_cforest(PPA_P,modelName)
+p4 <- fx_cforest(PPA_P,modelName)
 rf_df <- readRDS(fileName)
 d4_P <- rf_df
 
 ### Forest2 (TROLL)
-#source(paste0(scripts_dir, "/to_test/readTROLL.R"))
-#
-#troll <- models$Forest2 %>%
-#  ungroup() %>% # There shouldn't be groups anyways
-#  mutate(Biomass = scales::rescale(Biomass,
-#                                   to = c(0, 100)))%>%
-#  select(-Model, -SeedRain)
-#troll_B <- troll %>% select(-Productivity)
-#troll_P <- troll %>% select(-Biomass)
-#setnames(troll_P, "Productivity", "Biomass")
+source(paste0(scripts_dir, "/to_test/readTROLL.R"))
 
-##Biomass
-#model<-troll_B
-#C3 <- fx_single_cond(model,32,meta)
-#C4 <- fx_single_cond(model,32,iso)
-#model<-subset(model, select=c(-lma,-ah))
-#C2 <- fx_single_cond(model,1,iso)
-#model<-subset(model, select=c(-hmax))
-#C1 <- fx_single_cond(model,1,meta)
+troll <- models$Forest2 %>%
+ select(-Model, -SeedRain)
+troll_B <- troll %>% select(-Productivity)
+troll_P <- troll %>% select(-Biomass)
+setnames(troll_P, "Productivity", "Biomass")
+
+#Biomass
+model<-troll_B
+C3 <- fx_single_cond(model,32,meta)
+C4 <- fx_single_cond(model,32,iso)
+model<-subset(model, select=c(-lma,-ah))
+C2 <- fx_single_cond(model,1,iso)
+model<-subset(model, select=c(-hmax))
+C1 <- fx_single_cond(model,1,meta)
 
 modelName = "Forest2_m"
 fileName = paste0(tmp_dir,"/randomForest/",modelName,".Rda")
-#rf_df <- fx_cforest_df(C1,C2,C3,C4,modelName)
-rf_df <- readRDS(fileName)
-#p5 <- fx_plot(rf_df,modelName)
+rf_df <- fx_cforest_df(C1,C2,C3,C4,modelName)
+#rf_df <- readRDS(fileName)
+p5 <- fx_plot(rf_df,modelName)
 d5 <- rf_df
 
-##Productivity
-#model<-troll_P
-#C3 <- fx_single_cond(model,32,meta)
-#C4 <- fx_single_cond(model,32,iso)
-#model<-subset(model, select=c(-pmass,-lma,-dmax))
-#C2 <- fx_single_cond(model,1,iso)
-#model<-subset(troll_P, select=c(-hmax,-ah,-wsg))
-#C1 <- fx_single_cond(model,1,meta)
+#Productivity
+model<-troll_P
+C3 <- fx_single_cond(model,32,meta)
+C4 <- fx_single_cond(model,32,iso)
+model<-subset(model, select=c(-pmass,-lma,-dmax))
+C2 <- fx_single_cond(model,1,iso)
+model<-subset(troll_P, select=c(-hmax,-ah,-wsg))
+C1 <- fx_single_cond(model,1,meta)
 
 modelName = "Forest2_m_P"
 fileName = paste0(tmp_dir,"/randomForest/",modelName,".Rda")
-#rf_df <- fx_cforest_df(C1,C2,C3,C4,modelName)
-rf_df <- readRDS(fileName)
-#p5 <- fx_plot(rf_df,modelName)
+rf_df <- fx_cforest_df(C1,C2,C3,C4,modelName)
+#rf_df <- readRDS(fileName)
+p5 <- fx_plot(rf_df,modelName)
 d5_P <- rf_df
 
 ### Forest2 (TROLL) h_realmax
 source(paste0(scripts_dir, "/to_test/readTROLL.R"))
 
 troll_hrealmax <- models$Forest2 %>%
-   ungroup() %>% # There shouldn't be groups anyways
-   mutate(Biomass = scales::rescale(Biomass,
-                                    to = c(0, 100)))%>%
    select(-Model, -SeedRain) %>%
    mutate(h_realmax = hmax * dmax / (dmax + ah)) %>%
    select(-hmax, -ah, -dmax)
@@ -206,19 +190,19 @@ troll_hrealmax_B <- troll_hrealmax %>% select(-Productivity)
 troll_hrealmax_P <- troll_hrealmax %>% select(-Biomass)
 setnames(troll_hrealmax_P, "Productivity", "Biomass")
 
-##Biomass
-#model<-troll_hrealmax_B
-#C2 <- fx_single_cond(model,1,iso)
-#C3 <- fx_single_cond(model,32,meta)
-#C4 <- fx_single_cond(model,32,iso)
-#model<-subset(model, select=-lma)
-#C1 <- fx_single_cond(model,1,meta)
+#Biomass
+model<-troll_hrealmax_B
+C2 <- fx_single_cond(model,1,iso)
+C3 <- fx_single_cond(model,32,meta)
+C4 <- fx_single_cond(model,32,iso)
+model<-subset(model, select=-lma)
+C1 <- fx_single_cond(model,1,meta)
 
 modelName = "Forest2_hrealmax_m"
 fileName = paste0(tmp_dir,"/randomForest/",modelName,".Rda")
-#rf_df <- fx_cforest_df(C1,C2,C3,C4,modelName)
-rf_df <- readRDS(fileName)
-#p5h <- fx_plot(rf_df,modelName)
+rf_df <- fx_cforest_df(C1,C2,C3,C4,modelName)
+#rf_df <- readRDS(fileName)
+p5h <- fx_plot(rf_df,modelName)
 d5h <- rf_df
 
 #Productivity
@@ -241,53 +225,50 @@ sd(t3$Biomass)
 
 modelName = "Forest2_hrealmax_m_P"
 fileName = paste0(tmp_dir,"/randomForest/",modelName,".Rda")
-#rf_df <- fx_cforest_df(C1,C2,C3,C4,modelName)
-rf_df <- readRDS(fileName)
-#p5h <- fx_plot(rf_df,modelName)
+rf_df <- fx_cforest_df(C1,C2,C3,C4,modelName)
+#rf_df <- readRDS(fileName)
+p5h <- fx_plot(rf_df,modelName)
 d5h_P <- rf_df
 
 ### Dryland (Bjoern)
-#source(paste0(scripts_dir, "/to_test/readBjoern.R"))
-#
-#bjoern <- models$bjoern %>% 
-#    ungroup() %>% # There shouldn't be groups anyways
-#    mutate(Biomass = scales::rescale(Biomass,
-#                                     to = c(0, 100)))%>%
-#    select(-Model, -SeedRain) 
-# bjoern_B <- bjoern %>% select(-Productivity)
-# bjoern_P <- bjoern %>% select(-Biomass)
-# setnames(bjoern_P, "Productivity", "Biomass")
-#
-##Biomass
-#model<-bjoern_B
-#C1 <- fx_single_cond(model,1,meta)
-#model<-subset(model, select=-pLeaf)
-#C2 <- fx_single_cond(model,1,iso)
-#model<-subset(model, select=c(-pStorage))
-#C3 <- fx_single_cond(model,32,meta)
-#C4 <- fx_single_cond(model,32,iso)
+source(paste0(scripts_dir, "/to_test/readBjoern.R"))
+
+bjoern <- models$bjoern %>% 
+ select(-Model, -SeedRain)
+ bjoern_B <- bjoern %>% select(-Productivity)
+ bjoern_P <- bjoern %>% select(-Biomass)
+ setnames(bjoern_P, "Productivity", "Biomass")
+
+#Biomass
+model<-bjoern_B
+C1 <- fx_single_cond(model,1,meta)
+model<-subset(model, select=-pLeaf)
+C2 <- fx_single_cond(model,1,iso)
+model<-subset(model, select=c(-pStorage))
+C3 <- fx_single_cond(model,32,meta)
+C4 <- fx_single_cond(model,32,iso)
 
 modelName = "Dryland_m"
 fileName = paste0(tmp_dir,"/randomForest/",modelName,".Rda")
-#rf_df <- fx_cforest_df(C1,C2,C3,C4,modelName)
-rf_df <- readRDS(fileName)
-#p6 <- fx_plot(rf_df,modelName)
+rf_df <- fx_cforest_df(C1,C2,C3,C4,modelName)
+#rf_df <- readRDS(fileName)
+p6 <- fx_plot(rf_df,modelName)
 d6 <- rf_df
 
-##Productivity
-#model<-bjoern_P
-#C1 <- fx_single_cond(model,1,meta)
-#model<-subset(model, select=-pRoot)
-#C2 <- fx_single_cond(model,1,iso)
-#C4 <- fx_single_cond(model,32,iso)
-#model<-subset(model, select=-pLeaf)
-#C3 <- fx_single_cond(model,32,meta)
+#Productivity
+model<-bjoern_P
+C1 <- fx_single_cond(model,1,meta)
+model<-subset(model, select=-pRoot)
+C2 <- fx_single_cond(model,1,iso)
+C4 <- fx_single_cond(model,32,iso)
+model<-subset(model, select=-pLeaf)
+C3 <- fx_single_cond(model,32,meta)
 
 modelName = "Dryland_m_P"
 fileName = paste0(tmp_dir,"/randomForest/",modelName,".Rda")
-#rf_df <- fx_cforest_df(C1,C2,C3,C4,modelName)
-rf_df <- readRDS(fileName)
-#p6 <- fx_plot(rf_df,modelName)
+rf_df <- fx_cforest_df(C1,C2,C3,C4,modelName)
+#rf_df <- readRDS(fileName)
+p6 <- fx_plot(rf_df,modelName)
 d6_P <- rf_df
 
 # All models

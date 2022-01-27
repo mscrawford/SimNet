@@ -35,8 +35,8 @@ rm(d, IBC_grass, remove_cols)
 # -------------------------------------------------------------------------
 # General model formatting
 
-#model_runs <- list(IBC_grass.NDD)
-model_runs <- list(IBC_grass.noNDD)
+model_runs <- list(IBC_grass.NDD
+		   ,IBC_grass.noNDD)
 
 model_runs <- map(.x = model_runs,
                   .f = ~ {

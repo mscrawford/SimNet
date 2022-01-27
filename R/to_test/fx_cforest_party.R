@@ -16,6 +16,7 @@ fx_single_cond <- function(model,NoSpp,stage){
                    Year %in% stage) %>%
             mutate(id = row_number()) %>%
             mutate_if(is.character, as.factor) %>%
+	    mutate(Biomass = scales::rescale(Biomass, to = c(0, 100)))%>%
             select(-SpeciesID, -Ninitial, -Stage, -Rep, -Year) 
         
         set.seed(1987)
@@ -40,7 +41,6 @@ fx_single_cond <- function(model,NoSpp,stage){
         #Conditional permutation importance:
         set.seed(1987)
         CPI <- varimp(rf, conditional = TRUE)
-        print(CPI)
         #Prepare data frame for plotting
         rf_df <- as.data.frame(CPI)
         rf_df$varnames <- rownames(rf_df)
@@ -50,12 +50,11 @@ fx_single_cond <- function(model,NoSpp,stage){
         rf_df$var_categ <- c(1: dim(rf_df)[1])
 	cond <- paste(NoSpp,stage[1])
 	rf_df$condition <- rep(cond,times=dim(rf_df)[1])
-#	zeros <- data.frame(rep(0,times=dim(rf_df)[2]))
-#	rf_df[nrow(rf_df) + 1,] = rep(0,times=dim(rf_df)[2])
-#	rf_df$sCPI <- scales::rescale(rf_df$CPI, to = c(0,corr))
-#	rf_df <- head(rf_df,-1)
-	rf_df <- rf_df %>% mutate(sCPI = (CPI*corr/sum(CPI)))
-	print(paste0("corr=",corr,"; sum of scaled importance=",sum(rf_df$sCPI)))
+	rf_df <- rf_df %>% 
+		mutate(CPI = replace(CPI, which(CPI<0), NA) ) %>%
+		mutate(sCPI = (CPI*corr/sum(CPI,na.rm=TRUE)))
+        print(rf_df)
+	print(paste0("corr=",corr,"; sum of scaled importance=",sum(rf_df$CPI,na.rm=TRUE)))
         return(rf_df)
 }
 
