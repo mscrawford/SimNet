@@ -50,6 +50,12 @@ fx_edit_final_df <- function(df){
 			     mName == "Grass3"~4, 
 			     mName == "Dryland"~5, 
 			     mName == "Forest2_hrealmax"~6)
+	,modeln = case_when(condition == "Mono.-Meta."~1,
+			   condition == "Mono.-Iso."~2,
+			   condition == "Mix.-Meta."~3,
+			   condition == "Mix.-Iso."~4)
+#	,modeln = gsub('Mono.*',1,condition)
+#	,modeln = gsub('Mix.*',2,modeln)
 	,mName = recode(mName, "Grass1" = "Grass 1"
 			,"Grass2" = "Grass 2"
 			,"Grass3" = "Grass 3"
@@ -57,13 +63,14 @@ fx_edit_final_df <- function(df){
 			#,"Forest2" = "Forest 2"
 			,"Forest2_hrealmax" = "Forest 2"
 			,"Dryland" = "Dryland"))
+	print(df)
+	df <- df[complete.cases(df), ] #remove NA
+	print(df)
 	return(df)
 }
 
 fx_plot_all <- function(df,plot_title,plot_name){	
 	p <- ggplot(df, aes(x=reorder(varnames,typen), y=sCPI, fill=type)) +
-	#ggplot(df, aes(x=reorder(varnames, var_categ), y=sCPI, fill=type)) +
-	#ggplot(df, aes(x=varnames, y=sCPI, fill=type)) +
 	    geom_bar(position='dodge',stat='identity') +
 	#            geom_text(aes(label=scientific(CPI, digits = 2),size=10)
 	#    		  ,position = position_dodge(width = 1)
@@ -74,10 +81,8 @@ fx_plot_all <- function(df,plot_title,plot_name){
 	    xlab("Traits") +
 	    scale_fill_brewer(palette = "Set1",name = "Trait type") +
 	    scale_color_brewer(palette = "Set1") +
-	    ylim(NA,1) +
 	    scale_y_continuous(limits = c(0, 1), breaks = seq(0, 1, by = 0.5)) + 
-	#    ylim(NA,1.25) +
-	    facet_grid(condition ~ reorder(mName, funcdom), scales = "free_x", 
+	    facet_grid(reorder(condition,modeln) ~ reorder(mName, funcdom), scales = "free_x", 
 	     space = "free_x") + # Let the width of facets vary and force all bars to have the same width.
 	    theme_bw() +
 	    theme(text = element_text(size = 14),legend.position = "top",
@@ -217,8 +222,12 @@ d6_P <- fx_run_cforest(model,modelName,fileName)
 all_d <- rbind(d1,d2,d3,d4,d5h,d6)
 all_d <- fx_edit_final_df(all_d)
 fx_plot_all(all_d,"Trait importance in determining Biomass","all_models_cforest_grid_c")
+all_d <- all_d[all_d$condition %in% c('Mono.-Meta.','Mix.-Meta.'), ]
+fx_plot_all(all_d,"Trait importance in determining Biomass","all_models_cforest_grid_c_meta")
 
 #Productivity
 all_d_P <- rbind(d1_P,d2_P,d3_P,d4_P,d5h_P,d6_P)
 all_d_P <- fx_edit_final_df(all_d_P)
 fx_plot_all(all_d_P,"Trait importance in determining Productivity","all_models_cforest_grid_c_P")
+all_d_P <- all_d_P[all_d_P$condition %in% c('Mono.-Meta.','Mix.-Meta.'), ]
+fx_plot_all(all_d_P,"Trait importance in determining Productivity","all_models_cforest_grid_c_P_meta")
