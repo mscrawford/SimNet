@@ -85,8 +85,8 @@ fx_plot <- function(rf_df,modelName){
 	    geom_bar(position='dodge',stat='identity') +
 	            geom_text(aes(label=scientific(CPI, digits = 2))
 	    		  ,position = position_dodge(width = 1)
-	                      ,hjust=0,vjust=0.2,color="black"#,size=7.5
-	                      ,show.legend = FALSE,angle = 45) +
+	                      ,hjust=0.5,vjust=-0.5,color="black"#,size=7.5
+	                      ,show.legend = FALSE) +#,angle = 45
 	    ylab("Conditional permutation importance, scaled") +
 	    xlab("Traits") +
 	    scale_fill_brewer(palette = "Set1",name = "Trait type") +
@@ -111,5 +111,5 @@ fx_cforest <- function(model,modelName){
 	C4 <- fx_single_cond(model,32,iso)
         rf_df <- fx_cforest_df(C1,C2,C3,C4,modelName)
 	plot <- fx_plot(rf_df,modelName)
-        return(plot)
+        return(rf_df)
 }
