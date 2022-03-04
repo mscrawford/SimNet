@@ -21,12 +21,12 @@ setnames(adam_P, "Productivity", "Biomass")
 
 #Biomass
 model<-adam_B
-C3 <- fx_single_cond(model,32,meta)
-C4 <- fx_single_cond(model,32,iso)
+C3 <- fx_single_cond(modelName,model,32,meta)
+C4 <- fx_single_cond(modelName,model,32,iso)
 # remove traits with negative importance values:
 model <- subset(model, select = -pNi)
-C1 <- fx_single_cond(model,1,meta)
-C2 <- fx_single_cond(model,1,iso)
+C1 <- fx_single_cond(modelName,model,1,meta)
+C2 <- fx_single_cond(modelName,model,1,iso)
 
 modelName = "Grass1_m"
 fileName = paste0(tmp_dir,"/randomForest/",modelName,".Rda")
@@ -37,11 +37,11 @@ d1 <- rf_df
 
 #Productivity
 model<-adam_P
-C3 <- fx_single_cond(model,32,meta)
-C4 <- fx_single_cond(model,32,iso)
+C3 <- fx_single_cond(modelName,model,32,meta)
+C4 <- fx_single_cond(modelName,model,32,iso)
 model <- subset(model, select = -pNi)
-C1 <- fx_single_cond(model,1,meta)
-C2 <- fx_single_cond(model,1,iso)
+C1 <- fx_single_cond(modelName,model,1,meta)
+C2 <- fx_single_cond(modelName,model,1,iso)
 
 modelName = "Grass1_m_P"
 fileName = paste0(tmp_dir,"/randomForest/",modelName,".Rda")
@@ -85,11 +85,11 @@ IBC_grass <- models$Grass3 %>%
 
 #Biomass
 model<-IBC_grass_B
-C3 <- fx_single_cond(model,32,meta)
-C4 <- fx_single_cond(model,32,iso)
+C3 <- fx_single_cond(modelName,model,32,meta)
+C4 <- fx_single_cond(modelName,model,32,iso)
 model<-subset(model, select=c(-SLA, -meanSpacerLength))
-C1 <- fx_single_cond(model,1,meta)
-C2 <- fx_single_cond(model,1,iso)
+C1 <- fx_single_cond(modelName,model,1,meta)
+C2 <- fx_single_cond(modelName,model,1,iso)
 
 modelName = "Grass3_m"
 #modelName = "Grass3_m_noNDD"
@@ -101,11 +101,11 @@ d3 <- rf_df
 
 #Productivity
 model<-IBC_grass_P
-C3 <- fx_single_cond(model,32,meta)
-C4 <- fx_single_cond(model,32,iso)
+C3 <- fx_single_cond(modelName,model,32,meta)
+C4 <- fx_single_cond(modelName,model,32,iso)
 model<-subset(model, select=c(-SLA, -meanSpacerLength))
-C1 <- fx_single_cond(model,1,meta)
-C2 <- fx_single_cond(model,1,iso)
+C1 <- fx_single_cond(modelName,model,1,meta)
+C2 <- fx_single_cond(modelName,model,1,iso)
 
 modelName = "Grass3_m_P"
 #modelName = "Grass3_m_P_noNDD"
@@ -149,12 +149,12 @@ setnames(troll_P, "Productivity", "Biomass")
 
 #Biomass
 model<-troll_B
-C3 <- fx_single_cond(model,32,meta)
-C4 <- fx_single_cond(model,32,iso)
+C3 <- fx_single_cond(modelName,model,32,meta)
+C4 <- fx_single_cond(modelName,model,32,iso)
 model<-subset(model, select=c(-lma,-ah))
-C2 <- fx_single_cond(model,1,iso)
+C2 <- fx_single_cond(modelName,model,1,iso)
 model<-subset(model, select=c(-hmax))
-C1 <- fx_single_cond(model,1,meta)
+C1 <- fx_single_cond(modelName,model,1,meta)
 
 modelName = "Forest2_m"
 fileName = paste0(tmp_dir,"/randomForest/",modelName,".Rda")
@@ -165,12 +165,12 @@ d5 <- rf_df
 
 #Productivity
 model<-troll_P
-C3 <- fx_single_cond(model,32,meta)
-C4 <- fx_single_cond(model,32,iso)
+C3 <- fx_single_cond(modelName,model,32,meta)
+C4 <- fx_single_cond(modelName,model,32,iso)
 model<-subset(model, select=c(-pmass,-lma,-dmax))
-C2 <- fx_single_cond(model,1,iso)
+C2 <- fx_single_cond(modelName,model,1,iso)
 model<-subset(troll_P, select=c(-hmax,-ah,-wsg))
-C1 <- fx_single_cond(model,1,meta)
+C1 <- fx_single_cond(modelName,model,1,meta)
 
 modelName = "Forest2_m_P"
 fileName = paste0(tmp_dir,"/randomForest/",modelName,".Rda")
@@ -192,11 +192,11 @@ setnames(troll_hrealmax_P, "Productivity", "Biomass")
 
 #Biomass
 model<-troll_hrealmax_B
-C2 <- fx_single_cond(model,1,iso)
-C3 <- fx_single_cond(model,32,meta)
-C4 <- fx_single_cond(model,32,iso)
+C2 <- fx_single_cond(modelName,model,1,iso)
+C3 <- fx_single_cond(modelName,model,32,meta)
+C4 <- fx_single_cond(modelName,model,32,iso)
 model<-subset(model, select=-lma)
-C1 <- fx_single_cond(model,1,meta)
+C1 <- fx_single_cond(modelName,model,1,meta)
 
 modelName = "Forest2_hrealmax_m"
 fileName = paste0(tmp_dir,"/randomForest/",modelName,".Rda")
@@ -207,12 +207,12 @@ d5h <- rf_df
 
 #Productivity
 model<-troll_hrealmax_P
-C3 <- fx_single_cond(model,32,meta)
-C4 <- fx_single_cond(model,32,iso)
+C3 <- fx_single_cond(modelName,model,32,meta)
+C4 <- fx_single_cond(modelName,model,32,iso)
 model<-subset(model, select=-wsg)
-C1 <- fx_single_cond(model,1,meta)
+C1 <- fx_single_cond(modelName,model,1,meta)
 model<-subset(troll_hrealmax_P, select=c(-nmass,-lma,-h_realmax))
-C2 <- fx_single_cond(model,1,iso)
+C2 <- fx_single_cond(modelName,model,1,iso)
 
 #See what the data frame looks like for only monoculture-isolation:
 t2 <- model[which(model$Stage == 'Without seed inflow' & model$Ninitial == 1), ]
@@ -230,46 +230,6 @@ rf_df <- fx_cforest_df(C1,C2,C3,C4,modelName)
 p5h <- fx_plot(rf_df,modelName)
 d5h_P <- rf_df
 
-### Dryland (Bjoern)
-source(paste0(scripts_dir, "/to_test/readBjoern.R"))
-
-bjoern <- models$bjoern %>% 
- select(-Model, -SeedRain)
- bjoern_B <- bjoern %>% select(-Productivity)
- bjoern_P <- bjoern %>% select(-Biomass)
- setnames(bjoern_P, "Productivity", "Biomass")
-
-#Biomass
-model<-bjoern_B
-C1 <- fx_single_cond(model,1,meta)
-model<-subset(model, select=-pLeaf)
-C2 <- fx_single_cond(model,1,iso)
-model<-subset(model, select=c(-pStorage))
-C3 <- fx_single_cond(model,32,meta)
-C4 <- fx_single_cond(model,32,iso)
-
-modelName = "Dryland_m"
-fileName = paste0(tmp_dir,"/randomForest/",modelName,".Rda")
-rf_df <- fx_cforest_df(C1,C2,C3,C4,modelName)
-#rf_df <- readRDS(fileName)
-p6 <- fx_plot(rf_df,modelName)
-d6 <- rf_df
-
-#Productivity
-model<-bjoern_P
-C1 <- fx_single_cond(model,1,meta)
-model<-subset(model, select=-pRoot)
-C2 <- fx_single_cond(model,1,iso)
-C4 <- fx_single_cond(model,32,iso)
-model<-subset(model, select=-pLeaf)
-C3 <- fx_single_cond(model,32,meta)
-
-modelName = "Dryland_m_P"
-fileName = paste0(tmp_dir,"/randomForest/",modelName,".Rda")
-rf_df <- fx_cforest_df(C1,C2,C3,C4,modelName)
-#rf_df <- readRDS(fileName)
-p6 <- fx_plot(rf_df,modelName)
-d6_P <- rf_df
 
 # All models
 all_d <- rbind(d1,d2,d3,d4,d5,d5h,d6) %>%

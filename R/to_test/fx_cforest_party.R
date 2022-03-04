@@ -2,13 +2,16 @@ library(party)
 library(ggplot2)
 library(dplyr)
 library(scales)
+ library(gridExtra)
+
 set.seed(1987)
 
 meta <- seq(80, 100)
 iso <- seq(180, 200)
 
-fx_single_cond <- function(modelName,model,NoSpp,stage){
+fx_cforest_single_condition <- function(modelName,model,NoSpp,stage){
 # Function to perform random forest analysis in a single condition (e.g. Mixture-Metacommuity)
+	# Prepare data before cforest analysis
 	is_productivity = grepl("_P$",modelName)
 	print("Single cond")
 	sizeT <- c("abmi","Vi","MaxMass","PC2score","dmax","ah","hmax","h_realmax","maxSize")
@@ -22,6 +25,7 @@ fx_single_cond <- function(modelName,model,NoSpp,stage){
             select(-SpeciesID, -Ninitial, -Stage, -Rep, -Year)
 	model <- subset (model, select = -(if(is_productivity){Biomass}else{Productivity})) 
         
+	# Cforest analysis
         train <- model %>% sample_frac(.70)
         test <- anti_join(model, train, by = 'id')
         
@@ -41,8 +45,9 @@ fx_single_cond <- function(modelName,model,NoSpp,stage){
 	corr <- round(cor(pred, test_res)[[1]], 2) #, method = "kendall" #pearson (default)
         title = paste("Correlation: ", corr,sep = "")
 
-        #Conditional permutation importance:
+        ##Conditional permutation importance:
         CPI <- varimp(rf, conditional = TRUE)
+
         #Prepare data frame for plotting
         rf_df <- as.data.frame(CPI)
         rf_df$varnames <- rownames(rf_df)
@@ -65,10 +70,10 @@ fx_single_cond <- function(modelName,model,NoSpp,stage){
 fx_cforest <- function(model,modelName){
 # Function to perform random forest for all four conditions (for a single model)
 	print(paste(modelName,"_fx_cforest"))
-	C1 <- fx_single_cond(modelName,model,1,meta)
-	C2 <- fx_single_cond(modelName,model,1,iso)
-	C3 <- fx_single_cond(modelName,model,32,meta)
-	C4 <- fx_single_cond(modelName,model,32,iso)
+	C1 <- fx_cforest_single_condition(modelName,model,1,meta)
+	C2 <- fx_cforest_single_condition(modelName,model,1,iso)
+	C3 <- fx_cforest_single_condition(modelName,model,32,meta)
+	C4 <- fx_cforest_single_condition(modelName,model,32,iso)
         rf_df <- fx_cforest_df(C1,C2,C3,C4,modelName)
 	plot <- fx_plot(rf_df,modelName)
         return(rf_df)
@@ -164,6 +169,7 @@ fx_edit_final_df <- function(df){
 			     mName == "Forest1"~0.65,#2, 
 			     mName == "Forest2_hrealmax"~0.45,#5, 
 			     mName == "Forest2_hrealmax_PCA"~0.45,#5, 
+			     mName == "Forest2_PCA"~0.45,#5, 
 			     mName == "Dryland"~0.05)#6)
 	,funcdom_p = case_when(mName == "Grass1"~0.8,#1,
 			     mName == "Grass2"~0.6,#2,
@@ -174,6 +180,7 @@ fx_edit_final_df <- function(df){
 			     mName == "Forest1"~0.25,#5,
 			     mName == "Forest2_hrealmax"~0.35,#4,
 			     mName == "Forest2_hrealmax_PCA"~0.35,#4,
+			     mName == "Forest2_PCA"~0.35,#4,
 			     mName == "Dryland"~0.1)#6)
 	,modeln = case_when(condition == "Mono.-Meta."~1,
 			   condition == "Mono.-Iso."~2,
@@ -189,6 +196,7 @@ fx_edit_final_df <- function(df){
 			#,"Forest2" = "Forest 2"
 			,"Forest2_hrealmax" = "Forest 2"
 			,"Forest2_hrealmax_PCA" = "Forest 2"
+			,"Forest2_PCA" = "Forest 2"
 			,"Dryland" = "Dryland"))
 	df <- df[complete.cases(df), ] #remove NA
 	return(df)
@@ -197,12 +205,13 @@ fx_edit_final_df <- function(df){
 fx_plot_all <- function(df,resvar,plot_name){	
 # Function to plot the random forest results for all four conditions (for all models)
 	plot_fdc <- ggplot(df, aes(x=reorder(mName, if(resvar=="Biomass"){funcdom}else{funcdom_p}),
-				   y=if(resvar=="Biomass"){funcdom}else{funcdom_p})) +
-		geom_bar(position='dodge',stat='identity')
-#	ggsave(file=paste0(tmp_dir,"/randomForest/",plot_name,"_top.pdf")
-#	       , width=9.5, height=7, dpi=300
-#	)
-#	while (!is.null(dev.list()))  dev.off()
+				   y=if(resvar=="Biomass"){funcdom}else{funcdom_p},
+				   fill=-if(resvar=="Biomass"){funcdom}else{funcdom_p})) +
+		geom_bar(position='dodge',stat='identity') +
+		ylab("Function-\nDominance\nCorrelation") +
+		xlab("Models") +
+		theme_classic() +
+		theme(legend.position = "none")
 
 	p <- ggplot(df, aes(x=reorder(varnames,typen), y=sCPI, fill=type)) +
 	    geom_bar(position='dodge',stat='identity') +
@@ -211,25 +220,26 @@ fx_plot_all <- function(df,resvar,plot_name){
 	#                      ,hjust=0,vjust=0.2,color="black",size=2
 	#                      ,show.legend = FALSE,angle = 90) +
 	    ggtitle(paste0("Trait importance in determining ",resvar)) +
-	    ylab("Conditional permutation importance, scaled to correlation") +
+	    ylab("Conditional permutation importance, \n scaled to correlation") +
 	    xlab("Traits") +
 	    scale_fill_manual(name = "Trait type",
 			       values = c("Resource related" = "red",
 					  "Size related" = "blue",
 					  "Size/Resource related" = "purple")) +
 	    scale_y_continuous(limits = c(0, 1), breaks = seq(0, 1, by = 0.5)) + 
-	    facet_grid(reorder(condition,modeln) ~ reorder(mName, if(resvar=="Biomass"){funcdom}else{funcdom_p}), scales = "free_x", 
-	     space = "free_x") +  # Let the width of facets vary and force all bars to have the same width.
+	    facet_grid(reorder(condition,modeln) ~ reorder(mName, if(resvar=="Biomass"){funcdom}else{funcdom_p}), scales = "free_x") +#, space = "free_x") +  # Let the width of facets vary and force all bars to have the same width.
 	    theme_bw() +
 	    theme(text = element_text(size = 14),legend.position = "top",
 	    axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1),
 	    plot.title = element_text(hjust = 0.5))
 
-#	    grid.arrange(plot_fdc, empty, p, ncol=1, nrow=2, widths=c(4,1), heights=c(1,4))
-
-	ggsave(file=paste0(tmp_dir,"/randomForest/",plot_name,".pdf")
-	       , width=9.5, height=7, dpi=300
-	)
-	while (!is.null(dev.list()))  dev.off()
+	    fileName = paste0(tmp_dir,"/randomForest/",plot_name,".pdf")
+	    pdf(fileName, width=9, height=8)
+	    grid.arrange(plot_fdc, p, nrow=2, heights=c(1,5))#, widths=c(4,1))
+	    dev.off()
+#	ggsave(file=paste0(tmp_dir,"/randomForest/",plot_name,".pdf")
+#	       , width=9.5, height=7, dpi=300
+#	)
+#	while (!is.null(dev.list()))  dev.off()
 	return(p)
 }

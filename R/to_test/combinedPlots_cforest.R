@@ -9,10 +9,10 @@ raw_data_dir      <- paste0(base_dir, "/data/raw")
 
 source(paste0(scripts_dir, "/to_test/fx_cforest_party.R"))
 
-READ_CACHE <- FALSE
-SAVE_CACHE <- TRUE
-#READ_CACHE <- TRUE 
-#SAVE_CACHE <- FALSE
+#READ_CACHE <- FALSE
+#SAVE_CACHE <- TRUE
+READ_CACHE <- TRUE 
+SAVE_CACHE <- FALSE
 
 if(READ_CACHE){model <- c()}else{}
 
@@ -120,6 +120,25 @@ modelName = "Forest2_P"
 fileName = paste0(tmp_dir,"/randomForest/",modelName,".Rda")
 d5_P <- fx_run_cforest(model,modelName,fileName)
 
+READ_CACHE <- FALSE
+SAVE_CACHE <- TRUE
+### Forest2 (TROLL) PCA - 3 components
+if(SAVE_CACHE){model <- readRDS(paste0(tmp_dir,"/PCA/Forest2_PCAcoord.Rda")) %>%
+		select(c(Rep, Ninitial, SpeciesID, Year, Stage, Productivity, Biomass, PC1score, PC2score, PC3score))
+}else{} 
+
+#Biomass
+modelName = "Forest2_PCA"
+fileName = paste0(tmp_dir,"/randomForest/",modelName,".Rda")
+d5h_2 <- fx_run_cforest(model,modelName,fileName)
+
+#Productivity
+modelName = "Forest2_PCA_P"
+fileName = paste0(tmp_dir,"/randomForest/",modelName,".Rda")
+d5h_2_P <- fx_run_cforest(model,modelName,fileName)
+READ_CACHE <- TRUE
+SAVE_CACHE <- FALSE
+
 ### Forest2 (TROLL) h_realmax
 if(SAVE_CACHE){model <- fx_read_model("readTROLL.R","Forest2") %>%
 		mutate(h_realmax = hmax * dmax / (dmax + ah)) %>%
@@ -145,19 +164,19 @@ d5h_P <- fx_run_cforest(model,modelName,fileName)
 #sd(t3$Biomass)
 
 ### Forest2 (TROLL) h_realmax PCA - 3 components
-if(SAVE_CACHE){model <- readRDS(paste0(tmp_dir,"/PCA/Forest2_PCAcoord.Rda")) %>%
+if(SAVE_CACHE){model <- readRDS(paste0(tmp_dir,"/PCA/Forest2_hrm_PCAcoord.Rda")) %>%
 		select(c(Rep, Ninitial, SpeciesID, Year, Stage, Productivity, Biomass, PC1score, PC2score, PC3score))
 }else{} 
 
 #Biomass
 modelName = "Forest2_hrealmax_PCA"
 fileName = paste0(tmp_dir,"/randomForest/",modelName,".Rda")
-d5h_2 <- fx_run_cforest(model,modelName,fileName)
+d5h_3 <- fx_run_cforest(model,modelName,fileName)
 
 #Productivity
 modelName = "Forest2_hrealmax_PCA_P"
 fileName = paste0(tmp_dir,"/randomForest/",modelName,".Rda")
-d5h_2_P <- fx_run_cforest(model,modelName,fileName)
+d5h_3_P <- fx_run_cforest(model,modelName,fileName)
 
 ### Dryland (Bjoern)
 if(SAVE_CACHE){model <- fx_read_model("readBjoern.R","bjoern") %>%
@@ -190,14 +209,14 @@ all_d <- all_d[all_d$condition %in% c('Mono.-Meta.','Mix.-Meta.'), ]
 fx_plot_all(all_d,resvar,pN2)
 
 ## PCA 3 components for Grass 3
-all_d <- rbind(d1,d2,d3_3,d4,d5h_2,d6)
+all_d <- rbind(d1,d2,d3_3,d4,d5h_3,d6)
 all_d <- fx_edit_final_df(all_d)
 fx_plot_all(all_d,resvar,pN5)
 all_d <- all_d[all_d$condition %in% c('Mono.-Meta.','Mix.-Meta.'), ]
 fx_plot_all(all_d,resvar,pN6)
 
 ## PCA 3 components for Grass 3, Grass 2 variable
-all_d <- rbind(d1,d2_v,d3_3,d4,d5h_2,d6)
+all_d <- rbind(d1,d2_v,d3_3,d4,d5h_3,d6)
 all_d <- fx_edit_final_df(all_d)
 fx_plot_all(all_d,resvar,pN5)
 all_d <- all_d[all_d$condition %in% c('Mono.-Meta.','Mix.-Meta.'), ]
@@ -212,14 +231,14 @@ all_d_P <- all_d_P[all_d_P$condition %in% c('Mono.-Meta.','Mix.-Meta.'), ]
 fx_plot_all(all_d_P,resvar,paste0(pN2,"_P"))
 
 ## PCA 3 components for Grass 3
-all_d_P <- rbind(d1_P,d2_P,d3_3_P,d4_P,d5h_2_P,d6_P)
+all_d_P <- rbind(d1_P,d2_P,d3_3_P,d4_P,d5h_3_P,d6_P)
 all_d_P <- fx_edit_final_df(all_d_P)
 fx_plot_all(all_d_P,resvar,paste0(pN5,"_P"))
 all_d_P <- all_d_P[all_d_P$condition %in% c('Mono.-Meta.','Mix.-Meta.'), ]
 fx_plot_all(all_d_P,resvar,paste0(pN6,"_P"))
 
 ## PCA 3 components for Grass 3, Grass 2 variable
-all_d_P <- rbind(d1_P,d2_v_P,d3_3_P,d4_P,d5h_2_P,d6_P)
+all_d_P <- rbind(d1_P,d2_v_P,d3_3_P,d4_P,d5h_3_P,d6_P)
 all_d_P <- fx_edit_final_df(all_d_P)
 fx_plot_all(all_d_P,resvar,paste0(pN5,"_v_P"))
 all_d_P <- all_d_P[all_d_P$condition %in% c('Mono.-Meta.','Mix.-Meta.'), ]
