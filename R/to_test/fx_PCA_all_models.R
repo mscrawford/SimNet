@@ -3,10 +3,31 @@ library("pls")
 library("factoextra")
 library(FactoMineR)
 library(corrplot)
+library(ggcorrplot)
 set.seed(1987)
 
 meta = seq(80, 100)
 iso = seq(180, 200)
+
+fx_cor_plot <- function(modelName,model){
+# Plot the correlation between all the traits of a model 
+        model <- model %>%
+            mutate_if(is.character, as.factor) %>%
+            select(-Productivity,-SpeciesID, -Ninitial, -Stage, -Rep, -Year, -Biomass) 
+        # Compute a correlation matrix
+        corr <- round(cor(model), 1)
+	# Compute a matrix of correlation p-values
+	p.mat <- cor_pmat(model)
+	ggcorrplot(corr)
+	ggcorrplot(corr, method = "circle", hc.order = TRUE, type = "upper",
+	ggtheme = ggplot2::theme_minimal, lab = TRUE,
+	p.mat = p.mat, insig = "blank") + # Leave blank on no significant coefficient
+	ggtitle(paste0("Correlation between traits of ", modelName)) + 
+	theme(text = element_text(size = 16))
+        ggsave(paste0(tmp_dir,"/PCA/corPlot_",modelName,".pdf"))
+        while (!is.null(dev.list()))  dev.off()
+        return()
+}
 
 fx_PCA <- function(modelName,model){
 # Perform a Principal Components Analysis for a given model and produce a biplot

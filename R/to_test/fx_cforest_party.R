@@ -18,10 +18,6 @@ fx_cforest_single_condition <- function(modelName,model,NoSpp,stage){
         model <- model %>%
             filter(Ninitial == NoSpp,
                    Year %in% stage) %>%
-            mutate(id = row_number()) %>%
-            mutate_if(is.character, as.factor) %>%
-	    mutate(Biomass = scales::rescale(Biomass, to = c(0, 100)))%>%
-	    mutate(Productivity = scales::rescale(Productivity, to = c(0, 100)))%>%
             select(-SpeciesID, -Ninitial, -Stage, -Rep, -Year)
 	model <- subset (model, select = -(if(is_productivity){Biomass}else{Productivity})) 
         
@@ -146,6 +142,11 @@ fx_read_model <- function(raw_file,models_id){
 	else{
 		M <- Ms %>%
 			select(-Model, -SeedRain)}
+	M <- M %>%
+		mutate(id = row_number()) %>%
+		mutate_if(is.character, as.factor) %>%
+		mutate(Biomass = scales::rescale(Biomass, to = c(0, 100))) %>%
+		mutate(Productivity = scales::rescale(Productivity, to = c(0, 100)))
         return(M)
 }	
 

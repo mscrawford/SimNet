@@ -79,7 +79,12 @@ d3_P <- fx_run_cforest(model,modelName,fileName)
 
 ### Grass3 (IBC-grass) PCA - 3 components
 if(SAVE_CACHE){model <- readRDS(paste0(tmp_dir,"/PCA/Grass3_PCAcoord.Rda")) %>%
-		select(Rep, Ninitial, SpeciesID, Year, Stage, Productivity, Biomass, PC1score, PC2score, PC3score)
+	select(Rep, Ninitial, SpeciesID, Year, Stage, Productivity, Biomass, PC1score, PC2score, PC3score) %>%
+	mutate(id = row_number()) %>%
+	mutate_if(is.character, as.factor) %>%
+	mutate(Biomass = scales::rescale(Biomass, to = c(0, 100))) %>%
+	mutate(Productivity = scales::rescale(Productivity, to = c(0, 100)))
+
 }else{} 
 
 #Biomass
@@ -124,7 +129,12 @@ READ_CACHE <- FALSE
 SAVE_CACHE <- TRUE
 ### Forest2 (TROLL) PCA - 3 components
 if(SAVE_CACHE){model <- readRDS(paste0(tmp_dir,"/PCA/Forest2_PCAcoord.Rda")) %>%
-		select(c(Rep, Ninitial, SpeciesID, Year, Stage, Productivity, Biomass, PC1score, PC2score, PC3score))
+	select(c(Rep, Ninitial, SpeciesID, Year, Stage, Productivity, Biomass, PC1score, PC2score, PC3score)) %>%
+	mutate(id = row_number()) %>%
+	mutate_if(is.character, as.factor) %>%
+	mutate(Biomass = scales::rescale(Biomass, to = c(0, 100))) %>%
+	mutate(Productivity = scales::rescale(Productivity, to = c(0, 100)))
+
 }else{} 
 
 #Biomass
@@ -165,7 +175,12 @@ d5h_P <- fx_run_cforest(model,modelName,fileName)
 
 ### Forest2 (TROLL) h_realmax PCA - 3 components
 if(SAVE_CACHE){model <- readRDS(paste0(tmp_dir,"/PCA/Forest2_hrm_PCAcoord.Rda")) %>%
-		select(c(Rep, Ninitial, SpeciesID, Year, Stage, Productivity, Biomass, PC1score, PC2score, PC3score))
+	select(c(Rep, Ninitial, SpeciesID, Year, Stage, Productivity, Biomass, PC1score, PC2score, PC3score)) %>%
+	mutate(id = row_number()) %>%
+	mutate_if(is.character, as.factor) %>%
+	mutate(Biomass = scales::rescale(Biomass, to = c(0, 100))) %>%
+	mutate(Productivity = scales::rescale(Productivity, to = c(0, 100)))
+
 }else{} 
 
 #Biomass

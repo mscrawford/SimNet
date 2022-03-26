@@ -17,6 +17,7 @@ IBC_grass <- models$Grass3 %>%
   select(-Model, -SeedRain) %>%
   select(Rep, Ninitial, SpeciesID, Year, Stage, Productivity, Biomass, LMR, MaxMass, Gmax, SLA, meanSpacerLength)
  
+G3_Corr <- fx_cor_plot("Grass3",IBC_grass)
 G3PCA <- fx_PCA("Grass3",IBC_grass)
 fviz_eig(G3PCA, addlabels = TRUE, ylim = c(0, 50))
 ggsave(paste0(tmp_dir,"/PCA/ScreePlot_Grass3.pdf")) #Eigenvals organized from largest to smallest
@@ -46,6 +47,7 @@ troll <- models$Forest2 %>%
                                      to = c(0, 100)))%>%
     select(-Model, -SeedRain)
 modelName <- "Forest2"
+F2_Corr <- fx_cor_plot(modelName,troll)
 F2PCA <- fx_PCA(modelName,troll)
 fviz_eig(F2PCA, addlabels = TRUE, ylim = c(0, 50))
 ggsave(paste0(tmp_dir,"/PCA/ScreePlot_Forest2.pdf")) #Eigenvals organized from largest to smallest
@@ -84,6 +86,7 @@ ggsave(paste0(tmp_dir,"/PCA/ScreePlot_Forest2_hrm.pdf")) #Eigenvals organized fr
 while (!is.null(dev.list()))  dev.off()
 
 modelName <- "Forest2_hrm"
+F2_hrm_Corr <- fx_cor_plot(modelName,troll)
 F2PCA_hrm_corr <- fx_correlation_plot(modelName,F2PCA_hrm)
 
 F2PCR <- pcr(Productivity~h_realmax+wsg+lma+pmass+nmass, data=troll, scale =TRUE, validation="CV")
