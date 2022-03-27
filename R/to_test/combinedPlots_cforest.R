@@ -125,8 +125,6 @@ modelName = "Forest2_P"
 fileName = paste0(tmp_dir,"/randomForest/",modelName,".Rda")
 d5_P <- fx_run_cforest(model,modelName,fileName)
 
-READ_CACHE <- FALSE
-SAVE_CACHE <- TRUE
 ### Forest2 (TROLL) PCA - 3 components
 if(SAVE_CACHE){model <- readRDS(paste0(tmp_dir,"/PCA/Forest2_PCAcoord.Rda")) %>%
 	select(c(Rep, Ninitial, SpeciesID, Year, Stage, Productivity, Biomass, PC1score, PC2score, PC3score)) %>%
@@ -146,8 +144,6 @@ d5h_2 <- fx_run_cforest(model,modelName,fileName)
 modelName = "Forest2_PCA_P"
 fileName = paste0(tmp_dir,"/randomForest/",modelName,".Rda")
 d5h_2_P <- fx_run_cforest(model,modelName,fileName)
-READ_CACHE <- TRUE
-SAVE_CACHE <- FALSE
 
 ### Forest2 (TROLL) h_realmax
 if(SAVE_CACHE){model <- fx_read_model("readTROLL.R","Forest2") %>%

@@ -65,6 +65,11 @@ F1C2 <- fx_traits_vs_biomass_jitter("F1C2",PPA,1,iso,"PC2score","PC1score",lab2,
 F1C3 <- fx_traits_vs_biomass_jitter("F1C3",PPA,32,meta,"PC2score","PC1score",lab2,lab1)
 F1C4 <- fx_traits_vs_biomass_jitter("F1C4",PPA,32,iso,"PC2score","PC1score",lab2,lab1)
 
+F1C1_P <- fx_traits_vs_biomass_jitter("F1C1_P",PPA,1,meta,"PC2score","PC1score",lab2,lab1)
+F1C2_P <- fx_traits_vs_biomass_jitter("F1C2_P",PPA,1,iso,"PC2score","PC1score",lab2,lab1)
+F1C3_P <- fx_traits_vs_biomass_jitter("F1C3_P",PPA,32,meta,"PC2score","PC1score",lab2,lab1)
+F1C4_P <- fx_traits_vs_biomass_jitter("F1C4_P",PPA,32,iso,"PC2score","PC1score",lab2,lab1)
+
 ### Forest2 (TROLL) h_realmax
 source(paste0(scripts_dir, "/to_test/readTROLL.R"))
 
@@ -84,6 +89,11 @@ F2C2 <- fx_traits_vs_biomass_jitter("F2C2_hrm",troll,1,iso,"PC2score","PC3score"
 F2C3 <- fx_traits_vs_biomass_jitter("F2C3_hrm",troll,32,meta,"PC1score","PC2score",lab1,lab2)
 F2C4 <- fx_traits_vs_biomass_jitter("F2C4_hrm",troll,32,iso,"PC2score","PC3score",lab2,lab3)
 
+F2C1_P <- fx_traits_vs_biomass_jitter("F2C1_hrm_P",troll,1,meta,"PC2score","PC1score",lab2,lab1)
+F2C2_P <- fx_traits_vs_biomass_jitter("F2C2_hrm_P",troll,1,iso,"PC3score","PC1score",lab3,lab1)
+F2C3_P <- fx_traits_vs_biomass_jitter("F2C3_hrm_P",troll,32,meta,"PC1score","PC3score",lab1,lab3)
+F2C4_P <- fx_traits_vs_biomass_jitter("F2C4_hrm_P",troll,32,iso,"PC2score","PC3score",lab2,lab3)
+
 ### Dryland (Bjoern)
 source(paste0(scripts_dir, "/to_test/readBjoern.R"))
 
@@ -96,6 +106,11 @@ lab3 <- "pStorage (allocation \n to storage) [gC/gC]"
 lab4 <- "pRoot (allocation \n to root) [gC/gC]"
 
 DC1 <- fx_traits_vs_biomass_jitter("DC1",bjoern,1,meta,"maxSize","pLeaf",lab1,lab2)
-DC2 <- fx_traits_vs_biomass_jitter("DC2",bjoern,1,iso,"maxSize","pStorage",lab1,lab3)
-DC3 <- fx_traits_vs_biomass_jitter("DC3",bjoern,32,meta,"pLeaf","maxSize",lab2,lab1)
+DC2 <- fx_traits_vs_biomass_jitter("DC2",bjoern,1,iso,"maxSize","pLeaf",lab1,lab2)
+DC3 <- fx_traits_vs_biomass_jitter("DC3",bjoern,32,meta,"maxSize","pLeaf",lab1,lab2)
 DC4 <- fx_traits_vs_biomass_jitter("DC4",bjoern,32,iso,"maxSize","pLeaf",lab1,lab2)
+
+DC1_P <- fx_traits_vs_biomass_jitter("DC1_P",bjoern,1,meta,"pLeaf","pStorage",lab2,lab3)
+DC2_P <- fx_traits_vs_biomass_jitter("DC2_P",bjoern,1,iso,"pStorage","maxSize",lab3,lab1)
+DC3_P <- fx_traits_vs_biomass_jitter("DC3_P",bjoern,32,meta,"maxSize","pLeaf",lab1,lab2)
+DC4_P <- fx_traits_vs_biomass_jitter("DC4_P",bjoern,32,iso,"maxSize","pLeaf",lab1,lab2)

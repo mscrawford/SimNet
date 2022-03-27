@@ -48,6 +48,8 @@ fx_traits_vs_biomass <- function(plotName,model,NoSpp,stage,g_by,trait1,trait2,x
 }
 
 fx_traits_vs_biomass_jitter <- function(plotName,model,NoSpp,stage,trait1,trait2,xlab,ylab){
+	is_productivity = grepl("_P$",plotName)
+	response <- if(is_productivity){"Productivity"}else{"Biomass"}
 	model <- model %>%
 	filter(Ninitial == NoSpp,
 	       Year %in% stage) %>%
@@ -73,56 +75,24 @@ fx_traits_vs_biomass_jitter <- function(plotName,model,NoSpp,stage,trait1,trait2
     geom_point(data = model.32,
                aes_string(x = trait1,
                           y = trait2,
-                          color = "Biomass", alpha = 0.8,
-                          size = "Biomass"),
+                          color = response, alpha = 0.8,
+                          size = response),
                position=position_jitter(h=jf2, w=jf1)) +
     geom_point(data = model.032, shape = 4,
                aes_string(x = trait1,
                           y = trait2),
                position=position_jitter(h=jf2, w=jf1)) +
     scale_colour_viridis() + #direction = -1) +
-    labs(size = "Log mean biomass",
-	 color = "Log mean biomass",
-         x = xlab,
-         y = ylab) +
+    labs(size = paste0("Log mean \n",response),
+	 color = paste0("Log mean \n",response),
+         x = xlab, y = ylab) +
+    guides(alpha="none") + 
     theme_bw() +
     theme(aspect.ratio = 1,text = element_text(size = 18))
   
   filename <- paste0(plotName,".pdf")
   path <- paste0(tmp_dir,"/traits_vs_biomass/")
-  ggsave(filename = filename
-         ,path = path
-         ,plot = p1
-         ,height = 13
-         ,width = 19
-         ,units = "cm")
-
-  p2 <- ggplot() +
-    geom_point(data = model.32,
-               aes_string(x = trait1,
-                          y = trait2,
-                          color = "Productivity", alpha = 0.8,
-                          size = "Productivity"),
-               position=position_jitter(h=jf2, w=jf1)) +
-    geom_point(data = model.032, shape = 4,
-               aes_string(x = trait1,
-                          y = trait2),
-               position=position_jitter(h=jf2, w=jf1)) +
-    scale_colour_viridis() + #direction = -1) +
-    labs(size = "Log mean productivity",
-	 color = "Log mean productivity",
-         x = xlab,
-         y = ylab) +
-    theme_bw() +
-    theme(aspect.ratio = 1,text = element_text(size = 18))
-  
-  filename <- paste0(plotName,"_P.pdf")
-  path <- paste0(tmp_dir,"/traits_vs_biomass/")
-  ggsave(filename = filename
-         ,path = path
-         ,plot = p2
-         ,height = 13
-         ,width = 19
-         ,units = "cm")
+  ggsave(filename = filename, path = path, plot = p1
+         ,height = 15, width = 19, units = "cm")
   return(p1)
 }
