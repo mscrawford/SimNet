@@ -48,14 +48,15 @@ fx_traits_vs_biomass <- function(plotName,model,NoSpp,stage,g_by,trait1,trait2,x
 }
 
 fx_traits_vs_biomass_jitter <- function(plotName,model,NoSpp,stage,trait1,trait2,xlab,ylab){
+	print(head(model))
 	is_productivity = grepl("_P$",plotName)
 	response <- if(is_productivity){"Productivity"}else{"Biomass"}
 	model <- model %>%
 	filter(Ninitial == NoSpp,
 	       Year %in% stage) %>%
 	select(-id, -Rep, -Ninitial)
-	model <- aggregate(.~SpeciesID,data=model, mean) 
-	
+	model <- aggregate(.~SpeciesID,data=model, mean)
+
 	model.32 <- model %>%
 	filter(Biomass > 0) %>%
 	mutate(Biomass = log(Biomass)) %>%
@@ -66,11 +67,18 @@ fx_traits_vs_biomass_jitter <- function(plotName,model,NoSpp,stage,trait1,trait2
 	filter(Biomass == 0) %>%
 	filter(Productivity == 0)
 	
-	jf1 <- unlist(model[trait1])
-	jf1 <- median(jf1)*0.06
-	jf2 <- unlist(model[trait2])
-	jf2 <- median(jf2)*0.06
+	jf_1 <- unlist(model[trait1])
+	jf1 <- median(jf_1)*0.06
+	jf_2 <- unlist(model[trait2])
+	jf2 <- median(jf_2)*0.06
 
+	modelName <- case_when(grepl("^G1",plotName) ~'Grass 1',
+			       grepl("^G2",plotName) ~'Grass 2',
+			       grepl("^G3",plotName) ~'Grass 3',
+			       grepl("^F1",plotName) ~'Forest 1',
+			       grepl("^F2",plotName) ~'Forest 2',
+			       grepl("^D",plotName) ~'Dryland')
+	print(modelName)
   p1 <- ggplot() +
     geom_point(data = model.32,
                aes_string(x = trait1,
@@ -78,21 +86,24 @@ fx_traits_vs_biomass_jitter <- function(plotName,model,NoSpp,stage,trait1,trait2
                           color = response, alpha = 0.8,
                           size = response),
                position=position_jitter(h=jf2, w=jf1)) +
+    ggtitle(modelName) + 
     geom_point(data = model.032, shape = 4,
                aes_string(x = trait1,
                           y = trait2),
                position=position_jitter(h=jf2, w=jf1)) +
     scale_colour_viridis() + #direction = -1) +
-    labs(size = paste0("Log mean \n",response),
-	 color = paste0("Log mean \n",response),
-         x = xlab, y = ylab) +
-    guides(alpha="none") + 
+    labs(x = xlab, y = ylab,
+	 size = paste0("Log mean \n",response),
+	 color = paste0("Log mean \n",response)) +
     theme_bw() +
-    theme(aspect.ratio = 1,text = element_text(size = 18))
-  
+    theme_classic() +
+    theme(aspect.ratio = 0.5,text = element_text(size = 30),
+    plot.title=element_text(hjust=0.5, vjust=0.5), legend.position = c(0.8, 0.57), 
+    legend.text = element_text(size=20), legend.title = element_text(size=20)) +
+	    if(grepl("G1C1|DC1_P",plotName)){guides(alpha="none", size="none")}else{guides(alpha="none", size="none", color="none")} 
   filename <- paste0(plotName,".pdf")
   path <- paste0(tmp_dir,"/traits_vs_biomass/")
   ggsave(filename = filename, path = path, plot = p1
-         ,height = 15, width = 19, units = "cm")
+         ,height = 13.5, width = 22, units = "cm")
   return(p1)
 }

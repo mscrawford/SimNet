@@ -16,6 +16,8 @@ install.packages("infer",dependencies = TRUE)
 install.packages("scales",dependencies = TRUE)
 install.packages("party",dependencies = TRUE)
 install_github("kassambara/factoextra") #library("factoextra")
+install.packages("ggcorrplot",dependencies = TRUE)
+install.packages("Gifi",dependencies = TRUE)
 
 # To use ggbiplot for PCA results visualization:
 install.packages("devtools",dependencies = TRUE)
