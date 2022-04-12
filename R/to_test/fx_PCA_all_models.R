@@ -11,6 +11,7 @@ iso = seq(180, 200)
 
 fx_cor_plot <- function(modelName,model){
 # Plot the correlation between all the traits of a model 
+	set.seed(1987)
         model <- model %>%
             mutate_if(is.character, as.factor) %>%
             select(-Productivity,-SpeciesID, -Ninitial, -Stage, -Rep, -Year, -Biomass) 
@@ -31,16 +32,13 @@ fx_cor_plot <- function(modelName,model){
 
 fx_PCA <- function(modelName,model){
 # Perform a Principal Components Analysis for a given model and produce a biplot
+	set.seed(1987)
 	print(paste0("PCA: ",modelName))
         model <- model %>%
             mutate_if(is.character, as.factor) %>%
             select(-Productivity,-SpeciesID, -Ninitial, -Stage, -Rep, -Year, -Biomass) 
 
         model.pca <- prcomp(model, center=TRUE, scale.=TRUE)
-        #print(summary(model.pca))
-        #print(str(model.pca))
-        #print(model.pca$center)
-        #print(model.pca$rotation)
         
 	#ggbiplot(mtcars.pca,ellipse=TRUE,obs.scale = 1, var.scale = 1,  labels=rownames(mtcars), groups=mtcars.country) +
         ggbiplot(model.pca, scale=0) +
@@ -66,12 +64,27 @@ fx_get_coordinates <- function(modelID,PCAresult,fileName){
 }
 
 fx_correlation_plot <- function(modelName,PCAresult){
-#Correlation plot to highlight most contributing variables to each dimension
+#Correlation plot: correlations variables - dimensions
+	print("var explained")
+	var_exp <- (summary(PCAresult))$importance[2,]
+	print(var_exp) 
 	var <- get_pca_var(PCAresult)
-	pdf(file = paste0(tmp_dir,"/PCA/Corr_",modelName,".pdf"), family = "sans")
-	p <- corrplot(var$contrib, is.corr=FALSE,col=colorRampPalette(c("#B2182B","#FDDBC7","#2166AC"))(100),
-		 title = "Contribution of variables to each dimension", 
-		 mar = c(0,0,1,0), tl.cex = 1.5, , font.main = 1, cex.axis = 1.5, cex.main = 1.7, number.digits = 1)
+	df <-var$cor
+	#we only select the first 3 dimensions (PCscores)
+	df <- df[,1:3]
+	num_dim <- dim(df)[2]
+	# Proportion of variation explained by each component
+	var_exp <- round(var_exp[1:num_dim], 2)
+	colnames(df)[colnames(df) == c("Dim.1","Dim.2","Dim.3")] <- 
+		case_when(grepl("^G",modelName) ~c('LES1','Size/Growth','Spacing'), 
+			  grepl("^F",modelName) ~c('LES2','maxHeight','woodDensity'))
+	colnames(df) <- paste0(colnames(df),"\n (",var_exp,")")  
+	
+	pdf(file = paste0(tmp_dir,"/PCA/Corr_",modelName,".pdf"), family = "sans",height = 7, width = 5)
+	corrplot(df, col=colorRampPalette(c("#B2182B","#FDDBC7","#2166AC"))(6), 
+		 addCoef.col = "black", details=FALSE, mar = c(0,0,0,0), type = "lower",
+		 #title = "Correlation of variables with each dimension", 
+		 cex.col=2.5, cex.var=3.5, digits=1, cl.cex = 1.25)
 	dev.off()
-	return(p)
+	return()
 }

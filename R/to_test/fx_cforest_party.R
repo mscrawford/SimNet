@@ -2,7 +2,8 @@ library(party)
 library(ggplot2)
 library(dplyr)
 library(scales)
- library(gridExtra)
+library(gridExtra)
+library(ggpubr)
 
 set.seed(1987)
 
@@ -176,28 +177,16 @@ fx_edit_final_df <- function(df){
 			   type == "Resource related"~1,
 			   type == "Size/Resource related"~0)
 	,funcdom = case_when(mName == "Grass1"~0.8,#1,
-			     mName == "Grass2"~0.6,#3, 
-			     mName == "Grass2_v"~0.6,#3, 
-			     mName == "Grass3"~0.5,#4, 
-			     mName == "Grass3_PCA2"~0.5,#4, 
-			     mName == "Grass3_PCA3"~0.5,#4, 
+			     grepl("^Grass2",mName)~0.6,#3, 
+			     grepl("^Grass3",mName)~0.5,#4, 
 			     mName == "Forest1"~0.65,#2, 
-			     mName == "Forest2"~0.45,#5, 
-			     mName == "Forest2_hrealmax"~0.45,#5, 
-			     mName == "Forest2_hrealmax_PCA"~0.45,#5, 
-			     mName == "Forest2_PCA"~0.45,#5, 
+			     grepl("^Forest2",mName)~0.45,#5, 
 			     mName == "Dryland"~0.05)#6)
 	,funcdom_p = case_when(mName == "Grass1"~0.8,#1,
-			     mName == "Grass2"~0.6,#2,
-			     mName == "Grass2_v"~0.6,#2,
-			     mName == "Grass3"~0.5,#3,
-			     mName == "Grass3_PCA2"~0.5,#3,
-			     mName == "Grass3_PCA3"~0.5,#3,
+			     grepl("^Grass2",mName)~0.6,#2, 
+			     grepl("^Grass3",mName)~0.5,#3, 
 			     mName == "Forest1"~0.25,#5,
-			     mName == "Forest2"~0.35,#4,
-			     mName == "Forest2_hrealmax"~0.35,#4,
-			     mName == "Forest2_hrealmax_PCA"~0.35,#4,
-			     mName == "Forest2_PCA"~0.35,#4,
+			     grepl("^Forest2",mName)~0.35,#4, 
 			     mName == "Dryland"~0.1)#6)
 	,modeln = case_when(condition == "Mono.-Meta."~1,
 			   condition == "Mono.-Iso."~2,
@@ -238,7 +227,8 @@ fx_plot_all <- function(df,resvar,plot_name){
 	#                      ,hjust=0,vjust=0.2,color="black",size=2
 	#                      ,show.legend = FALSE,angle = 90) +
 	    ggtitle(paste0("Trait importance in determining ",resvar)) +
-	    ylab("Conditional permutation importance, \n scaled to correlation") +
+	    ylab("Conditional permutation importance, \n scaled to r^2") +
+	    #ylab("Conditional permutation importance, \n scaled to correlation") +
 	    xlab("Traits") +
 	    scale_fill_manual(name = "Trait type",
 			       values = c("Resource related" = "red",
@@ -251,9 +241,11 @@ fx_plot_all <- function(df,resvar,plot_name){
 	    axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1),
 	    plot.title = element_text(hjust = 0.5))
 
-	    fileName = paste0(tmp_dir,"/randomForest/",plot_name,".pdf")
+	    fileName = paste0(tmp_dir,"/randomForest/",plot_name,".png")
+	    #fileName = paste0(tmp_dir,"/randomForest/",plot_name,".pdf")
 	    #fileName = paste0(tmp_dir,"/randomForest/conditionalFALSE/",plot_name,".pdf")
-	    pdf(fileName, width=9, height=8)
+	    png(fileName, width=864, height=768, units = "px")
+	    #pdf(fileName, width=9, height=8)
 	    grid.arrange(plot_fdc, p, nrow=2, heights=c(1,5))#, widths=c(4,1))
 	    dev.off()
 #	ggsave(file=paste0(tmp_dir,"/randomForest/",plot_name,".pdf")
@@ -264,22 +256,41 @@ fx_plot_all <- function(df,resvar,plot_name){
 }
 
 fx_diff <- function(df){	
-#	df <- df[df$condition %in% c('Mono.-Meta.','Mix.-Meta.'), ]
+# Calculate difference between biomass variance explained by size (and resource related) traits in monoculture vs. mixture. 
 	mono <- df[df$condition %in% c('Mono.-Meta.'), ] %>%
 		group_by(type, mName, funcdom, funcdom_p) %>%
 		summarize(sCPI=sum(sCPI)) 
 	mix <- df[df$condition %in% c('Mix.-Meta.'), ] %>%
 		group_by(type, mName, funcdom, funcdom_p) %>%
 		summarize(sCPI=sum(sCPI)) 
-	print(mono)
-	print(mix)
+	#print(mono)
+	#print(mix)
 	new_df = mono
 	new_df['sCPI'] = mono['sCPI'] - mix['sCPI'] 
 	
-	print('FINAL')
-	print(new_df)
+	#print('FINAL')
+	#print(new_df)
 	return(new_df)
 }
+
+#fx_plot_diff_mono_mix <- function(plotName,df){
+#	is_productivity = grepl("_P$",plotName)
+#	response <- if(is_productivity){"Productivity"}else{"Biomass"}
+#	df %>%
+#		ggplot(aes(x=if(is_productivity){funcdom_p}else{funcdom}, 
+#			   y=sCPI, 
+#			   color=type#,
+#			   #size=3,
+#			   #shape=mName
+#			   )) +
+#		geom_point() +
+#		stat_regline_equation(aes(label =  ..adj.rr.label..)) +
+#		geom_smooth(method="lm",se = FALSE)
+#	filename <- paste0(plotName,".png")
+#	path <- paste0(tmp_dir,"/randomForest/")
+#	ggsave(filename = filename, path = path, height = 11, width = 15, units = "cm")
+#	return()
+#}
 
 fx_plot_diff_mono_mix <- function(plotName,df){
 	is_productivity = grepl("_P$",plotName)
@@ -287,24 +298,31 @@ fx_plot_diff_mono_mix <- function(plotName,df){
 
 	xlab <- 'Function-dominance correlation'
 	ylab <- paste0("Difference (Monoculture-Mixture) in % of \n",response," variance explained per trait type")
-  p1 <- ggplot() +
-    geom_point(data = df,
-               aes_string(x = if(is_productivity){'funcdom_p'}else{'funcdom'},
-                          y = 'sCPI',
-                          shape = 'mName', color = 'type', size=3)) +
+  p1 <- ggplot(df,
+               aes(x = if(is_productivity){funcdom_p}else{funcdom},
+                          y = sCPI, label = mName,#size=3, 
+                          color = type)) +
+	    geom_text(vjust = "inward", hjust = "inward", color="black") +
+    guides(size="none", fill="none") + 
+    labs(shape = "Model", x = xlab, y = ylab) +
+    stat_smooth(method="lm", linetype='dashed', alpha = 0.2, aes(fill=type, color=type)) +
+    stat_regline_equation(label.x = c(0.25,0.55), label.y = c(1,1),aes(label =  ..adj.rr.label..)) +
+    geom_point() +
+    scale_fill_manual(name = "Trait type",
+		      values = c("Resource related" = "red",
+				 "Size related" = "blue")) +
     scale_color_manual(name = "Trait type",
 		      values = c("Resource related" = "red",
-				 "Size related" = "blue",
-				 "Size/Resource related" = "purple")) +
-    guides(size="none") + 
-    labs(shape = "Model", x = xlab, y = ylab) +
+				 "Size related" = "blue")) +
+    geom_hline(yintercept=0, linetype='dotted') +
     theme_bw() +
     theme_classic() +
-    theme(aspect.ratio = 1,text = element_text(size = 14)) 
+    theme(text = element_text(size = 14), legend.position = "top", legend.direction = "horizontal") 
   
-  filename <- paste0(plotName,".pdf")
+  filename <- paste0(plotName,".png")
+  #filename <- paste0(plotName,".pdf")
   path <- paste0(tmp_dir,"/randomForest/")
   ggsave(filename = filename, path = path, plot = p1
-         ,height = 12, width = 15, units = "cm")
+         ,height = 13, width = 15, units = "cm")
   return(p1)
 }
