@@ -10,6 +10,11 @@ set.seed(1987)
 meta <- seq(80, 100)
 iso <- seq(180, 200)
 
+#Rcolorbrewer colors:
+red <- "#e41a1cff"
+blue <- "#377eb8ff"
+purple <- "#984ea3ff"
+
 fx_cforest_single_condition <- function(modelName,model,NoSpp,stage){
 # Function to perform random forest analysis in a single condition (e.g. Mixture-Metacommuity)
 	# Prepare data before cforest analysis
@@ -122,9 +127,9 @@ fx_plot <- function(rf_df,modelName){
 	    ylab("Conditional permutation importance, scaled") +
 	    xlab("Traits") +
 	    scale_fill_manual(name = "Trait type",
-			       values = c("Resource related" = "red",
-					  "Size related" = "blue",
-					  "Size/Resource related" = "purple")) +
+			       values = c("Resource related" = red,
+					  "Size related" = blue,
+					  "Size/Resource related" = purple)) +
 	    ylim(NA,hlim) +
 	    facet_grid(~condition, 
              space = "free_x") + # Let the width of facets vary and force all bars to have the same width.
@@ -231,9 +236,9 @@ fx_plot_all <- function(df,resvar,plot_name){
 	    #ylab("Conditional permutation importance, \n scaled to correlation") +
 	    xlab("Traits") +
 	    scale_fill_manual(name = "Trait type",
-			       values = c("Resource related" = "red",
-					  "Size related" = "blue",
-					  "Size/Resource related" = "purple")) +
+			       values = c("Resource related" = red,
+					  "Size related" = blue,
+					  "Size/Resource related" = purple)) +
 	    scale_y_continuous(limits = c(0, 1), breaks = seq(0, 1, by = 0.5)) + 
 	    facet_grid(reorder(condition,modeln) ~ reorder(mName, -if(resvar=="Biomass"){funcdom}else{funcdom_p}), scales = "free_x") +#, space = "free_x") +  # Let the width of facets vary and force all bars to have the same width.
 	    theme_bw() +
@@ -273,26 +278,8 @@ fx_diff <- function(df){
 	return(new_df)
 }
 
-#fx_plot_diff_mono_mix <- function(plotName,df){
-#	is_productivity = grepl("_P$",plotName)
-#	response <- if(is_productivity){"Productivity"}else{"Biomass"}
-#	df %>%
-#		ggplot(aes(x=if(is_productivity){funcdom_p}else{funcdom}, 
-#			   y=sCPI, 
-#			   color=type#,
-#			   #size=3,
-#			   #shape=mName
-#			   )) +
-#		geom_point() +
-#		stat_regline_equation(aes(label =  ..adj.rr.label..)) +
-#		geom_smooth(method="lm",se = FALSE)
-#	filename <- paste0(plotName,".png")
-#	path <- paste0(tmp_dir,"/randomForest/")
-#	ggsave(filename = filename, path = path, height = 11, width = 15, units = "cm")
-#	return()
-#}
-
 fx_plot_diff_mono_mix <- function(plotName,df){
+# Plot difference (Monoculture-Mixture) in % of biomass or productivity variance explained per trait type
 	is_productivity = grepl("_P$",plotName)
 	response <- if(is_productivity){"Productivity"}else{"Biomass"}
 
@@ -305,15 +292,11 @@ fx_plot_diff_mono_mix <- function(plotName,df){
 	    geom_text(vjust = "inward", hjust = "inward", color="black") +
     guides(size="none", fill="none") + 
     labs(shape = "Model", x = xlab, y = ylab) +
-    stat_smooth(method="lm", linetype='dashed', alpha = 0.2, aes(fill=type, color=type)) +
     stat_regline_equation(label.x = c(0.25,0.55), label.y = c(1,1),aes(label =  ..adj.rr.label..)) +
     geom_point() +
-    scale_fill_manual(name = "Trait type",
-		      values = c("Resource related" = "red",
-				 "Size related" = "blue")) +
     scale_color_manual(name = "Trait type",
-		      values = c("Resource related" = "red",
-				 "Size related" = "blue")) +
+		      values = c("Resource related" = red,
+				 "Size related" = blue)) +
     geom_hline(yintercept=0, linetype='dotted') +
     theme_bw() +
     theme_classic() +
@@ -325,4 +308,23 @@ fx_plot_diff_mono_mix <- function(plotName,df){
   ggsave(filename = filename, path = path, plot = p1
          ,height = 13, width = 15, units = "cm")
   return(p1)
+}
+
+fx_plot_diff_mono_mix_smooth <- function(plotName,df){
+# Add regression line to fx_plot_diff_mono_mix
+	#select only data from size related traits & biomass to draw regression line (only condition in which it is significant)
+	df_stat_smooth <- df %>%
+		filter(type == 'Size related')
+	p1 = fx_plot_diff_mono_mix(plotName,df) + 
+		stat_smooth(data = df_stat_smooth, 
+		method="lm", se= FALSE, linetype='dashed', aes(color=type))
+#    stat_smooth(method="lm", linetype='dashed', alpha = 0.2, aes(fill=type, color=type)) +
+#    scale_fill_manual(name = "Trait type",
+#		      values = c("Resource related" = red,
+#				 "Size related" = blue)) +
+    filename <- paste0(plotName,".png")
+    path <- paste0(tmp_dir,"/randomForest/")
+    ggsave(filename = filename, path = path, plot = p1
+           ,height = 13, width = 15, units = "cm")
+    return(p1)
 }

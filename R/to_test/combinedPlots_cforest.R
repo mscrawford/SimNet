@@ -238,58 +238,58 @@ d6_P[d6_P == "maxSize"] <- "maxBiomass"
 d6_P[d6_P == "pLeaf"] <- "leafAllocation"
 d6_P[d6_P == "pStorage"] <- "storageAllocation"
 
-## All models
-##Biomass
-#resvar = "Biomass"
-#pN1 = "cforest_grid"
-#pN2 = "cforest_grid_meta"
-#pN3 = "cforest_grid_2PC"
-#pN4 = "cforest_grid_meta_2PC"
-#pN5 = "cforest_grid_3PC"
-#pN6 = "cforest_grid_meta_3PC"
-#all_d <- rbind(d1,d2,d3,d4,d5h,d6)
-#fx_plot_all(all_d,resvar,pN1)
-#all_d <- all_d[all_d$condition %in% c('Mono.-Meta.','Mix.-Meta.'), ]
-#fx_plot_all(all_d,resvar,pN2)
-#
-### PCA 3 components for Grass 3
-#all_d <- rbind(d1,d2,d3_3,d4,d5h_3,d6)
-#fx_plot_all(all_d,resvar,pN5)
-#all_d <- all_d[all_d$condition %in% c('Mono.-Meta.','Mix.-Meta.'), ]
-#fx_plot_all(all_d,resvar,pN6)
-#
-### PCA 3 components for Grass 3, Grass 2 variable
-#all_d <- rbind(d1,d2_v,d3_3,d4,d5h_3,d6)
-#fx_plot_all(all_d,resvar,pN5)
-#all_d <- all_d[all_d$condition %in% c('Mono.-Meta.','Mix.-Meta.'), ]
-#all_d[all_d == "Mono.-Meta."] <- "Monoculture"
-#all_d[all_d == "Mix.-Meta."] <- "Mixture"
-#bio_df <- all_d
-#fx_plot_all(all_d,resvar,paste0(pN6,"_v"))
-#print(head(all_d))
-#
-##Productivity
-#resvar = "Productivity"
-#all_d_P <- rbind(d1_P,d2_P,d3_P,d4_P,d5h_P,d6_P)
-#fx_plot_all(all_d_P,resvar,paste0(pN1,"_P"))
-#all_d_P <- all_d_P[all_d_P$condition %in% c('Mono.-Meta.','Mix.-Meta.'), ]
-#fx_plot_all(all_d_P,resvar,paste0(pN2,"_P"))
-#
-### PCA 3 components for Grass 3
-#all_d_P <- rbind(d1_P,d2_P,d3_3_P,d4_P,d5h_3_P,d6_P)
-#fx_plot_all(all_d_P,resvar,paste0(pN5,"_P"))
-#all_d_P <- all_d_P[all_d_P$condition %in% c('Mono.-Meta.','Mix.-Meta.'), ]
-#fx_plot_all(all_d_P,resvar,paste0(pN6,"_P"))
-#
-### PCA 3 components for Grass 3, Grass 2 variable
-#all_d_P <- rbind(d1_P,d2_v_P,d3_3_P,d4_P,d5h_3_P,d6_P)
-#fx_plot_all(all_d_P,resvar,paste0(pN5,"_v_P"))
-#all_d_P <- all_d_P[all_d_P$condition %in% c('Mono.-Meta.','Mix.-Meta.'), ]
-#all_d_P[all_d_P == "Mono.-Meta."] <- "Monoculture"
-#all_d_P[all_d_P == "Mix.-Meta."] <- "Mixture"
-#prod_df <- all_d_P
-#fx_plot_all(all_d_P,resvar,paste0(pN6,"_v_P"))
-#print(head(all_d_P))
+# All models
+#Biomass
+resvar = "Biomass"
+pN1 = "cforest_grid"
+pN2 = "cforest_grid_meta"
+pN3 = "cforest_grid_2PC"
+pN4 = "cforest_grid_meta_2PC"
+pN5 = "cforest_grid_3PC"
+pN6 = "cforest_grid_meta_3PC"
+all_d <- rbind(d1,d2,d3,d4,d5h,d6)
+fx_plot_all(all_d,resvar,pN1)
+all_d <- all_d[all_d$condition %in% c('Mono.-Meta.','Mix.-Meta.'), ]
+fx_plot_all(all_d,resvar,pN2)
+
+## PCA 3 components for Grass 3
+all_d <- rbind(d1,d2,d3_3,d4,d5h_3,d6)
+fx_plot_all(all_d,resvar,pN5)
+all_d <- all_d[all_d$condition %in% c('Mono.-Meta.','Mix.-Meta.'), ]
+fx_plot_all(all_d,resvar,pN6)
+
+## PCA 3 components for Grass 3, Grass 2 variable
+all_d <- rbind(d1,d2_v,d3_3,d4,d5h_3,d6)
+fx_plot_all(all_d,resvar,pN5)
+all_d <- all_d[all_d$condition %in% c('Mono.-Meta.','Mix.-Meta.'), ]
+all_d[all_d == "Mono.-Meta."] <- "Monoculture"
+all_d[all_d == "Mix.-Meta."] <- "Mixture"
+bio_df <- all_d
+fx_plot_all(all_d,resvar,paste0(pN6,"_v"))
+print(head(all_d))
+
+#Productivity
+resvar = "Productivity"
+all_d_P <- rbind(d1_P,d2_P,d3_P,d4_P,d5h_P,d6_P)
+fx_plot_all(all_d_P,resvar,paste0(pN1,"_P"))
+all_d_P <- all_d_P[all_d_P$condition %in% c('Mono.-Meta.','Mix.-Meta.'), ]
+fx_plot_all(all_d_P,resvar,paste0(pN2,"_P"))
+
+## PCA 3 components for Grass 3
+all_d_P <- rbind(d1_P,d2_P,d3_3_P,d4_P,d5h_3_P,d6_P)
+fx_plot_all(all_d_P,resvar,paste0(pN5,"_P"))
+all_d_P <- all_d_P[all_d_P$condition %in% c('Mono.-Meta.','Mix.-Meta.'), ]
+fx_plot_all(all_d_P,resvar,paste0(pN6,"_P"))
+
+## PCA 3 components for Grass 3, Grass 2 variable
+all_d_P <- rbind(d1_P,d2_v_P,d3_3_P,d4_P,d5h_3_P,d6_P)
+fx_plot_all(all_d_P,resvar,paste0(pN5,"_v_P"))
+all_d_P <- all_d_P[all_d_P$condition %in% c('Mono.-Meta.','Mix.-Meta.'), ]
+all_d_P[all_d_P == "Mono.-Meta."] <- "Monoculture"
+all_d_P[all_d_P == "Mix.-Meta."] <- "Mixture"
+prod_df <- all_d_P
+fx_plot_all(all_d_P,resvar,paste0(pN6,"_v_P"))
+print(head(all_d_P))
 
 # Difference plots Biomass
 d1 <- fx_diff(d1)
@@ -301,7 +301,7 @@ d6 <- fx_diff(d6)
 df <- rbind(d1,d2_v,d4,d5h_3,d6)
 #df <- rbind(d1,d2_v,d3_3,d4,d5h_3,d6)
 plotName <- 'Diff_import'
-fx_plot_diff_mono_mix(plotName,df)
+fx_plot_diff_mono_mix_smooth(plotName,df)
 
 d1_P <- fx_diff(d1_P)
 d2_v_P <- fx_diff(d2_v_P)
