@@ -220,10 +220,11 @@ fx_plot_all <- function(df,resvar,plot_name){
 				   y=if(resvar=="Biomass"){funcdom}else{funcdom_p},
 				   fill=-if(resvar=="Biomass"){funcdom}else{funcdom_p})) +
 		geom_bar(position='dodge',stat='identity') +
-		ylab("Function-\nDominance\nCorrelation") +
+		ylab("Func.-\nDom.\nCorr.") +
 		xlab("Models") +
 		theme_classic() +
-		theme(legend.position = "none")
+		theme(text = element_text(size = 20),legend.position = "none",
+		      axis.title.y = element_text(angle = 0))
 
 	p <- ggplot(df, aes(x=reorder(varnames,typen), y=sCPI, fill=type)) +
 	    geom_bar(position='dodge',stat='identity') +
@@ -242,7 +243,7 @@ fx_plot_all <- function(df,resvar,plot_name){
 	    scale_y_continuous(limits = c(0, 1), breaks = seq(0, 1, by = 0.5)) + 
 	    facet_grid(reorder(condition,modeln) ~ reorder(mName, -if(resvar=="Biomass"){funcdom}else{funcdom_p}), scales = "free_x") +#, space = "free_x") +  # Let the width of facets vary and force all bars to have the same width.
 	    theme_bw() +
-	    theme(text = element_text(size = 14),legend.position = "top",
+	    theme(text = element_text(size = 28),legend.position = "top",
 	    axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1),
 	    plot.title = element_text(hjust = 0.5))
 
