@@ -59,7 +59,7 @@ fx_cforest_single_condition <- function(modelName,model,NoSpp,stage){
         rf_df$varnames <- rownames(rf_df)
         rownames(rf_df) <- NULL
 	if(grepl("^Grass3_PCA",modelName)){
-	rf_df$type <- ifelse(rf_df$varnames == "PC2score","Size/Resource related","Resource related")}
+	rf_df$type <- ifelse(rf_df$varnames == "PC2score","Mixed","Resource related")}
 	else{rf_df$type <- ifelse(rf_df$varnames %in% sizeT,"Size related","Resource related")}
         rf_df <- arrange(rf_df,desc(CPI))
         rf_df$var_categ <- c(1: dim(rf_df)[1])
@@ -105,8 +105,10 @@ fx_cforest_df <- function(C1,C2,C3,C4,modelName){
 fx_plot <- function(rf_df,modelName){
 # Function to plot the random forest results for all four conditions (for a single model)
 	#print(paste(modelName,"_plot"))
+	vals1 = c("Resource related" = red, "Size related" = blue)
+	vals2 = c("Resource related" = red,"Mixed" = purple)
 	rf_df <- rf_df %>%
-	mutate(condition = recode(condition, "Mono.-Meta." = "Monoculture-Metacommunity"
+		mutate(condition = recode(condition, "Mono.-Meta." = "Monoculture-Metacommunity"
 				  ,"Mono.-Iso." = "Monoculture-Isolation"
 				  ,"Mix.-Meta." = "Mixture-Metacommunity"
 				  ,"Mix.-Iso." = "Mixture-Isolation"))        
@@ -119,17 +121,16 @@ fx_plot <- function(rf_df,modelName){
 	resvar = if(grepl("_P$",modelName)){"Productivity"}else{"Biomass"} 
 	plot <- ggplot(rf_df, aes(x=reorder(varnames, typen), y=sCPI, fill=type)) +
 	    geom_bar(position='dodge',stat='identity') +
-	            geom_text(aes(label=scientific(CPI, digits = 2))
+	            geom_text(aes(label=scientific(sCPI, digits = 2))
 	    		  ,position = position_dodge(width = 1)
 	                      ,hjust=0.5,vjust=-0.5,color="black"#,size=7.5
 	                      ,show.legend = FALSE) +#,angle = 45
-	    ggtitle(paste0("Trait importance in determining ",resvar)) +
-	    ylab("Conditional permutation importance, scaled") +
+	    #ggtitle(paste0("Trait importance in determining ",resvar)) +
+	    ylab("Proportion of variance explained") +
+	    #ylab("Conditional permutation importance, scaled") +
 	    xlab("Traits") +
 	    scale_fill_manual(name = "Trait type",
-			       values = c("Resource related" = red,
-					  "Size related" = blue,
-					  "Size/Resource related" = purple)) +
+			      values = if("Mixed" %in% rf_df$type){vals2}else{vals1}) +
 	    ylim(NA,hlim) +
 	    facet_grid(~condition, 
              space = "free_x") + # Let the width of facets vary and force all bars to have the same width.
@@ -143,12 +144,6 @@ fx_plot <- function(rf_df,modelName){
 	while (!is.null(dev.list()))  dev.off()
         return(plot)
 }
-
-#fx_run_cforest <- function(model,modelName,fileName){
-#	if(SAVE_CACHE){rf_df <- fx_cforest(model,modelName)}
-#	else{rf_df <- readRDS(fileName)}
-#        return(rf_df)
-#}	
 
 fx_read_model <- function(raw_file,models_id){
 	source(paste0(scripts_dir, "/to_test/",raw_file), local = TRUE)
@@ -180,7 +175,7 @@ fx_edit_final_df <- function(df){
 					  ,"32 180" = "Mix.-Iso.")
 	,typen = case_when(type == "Size related"~0,
 			   type == "Resource related"~1,
-			   type == "Size/Resource related"~0)
+			   type == "Mixed"~0)
 	,funcdom = case_when(mName == "Grass1"~0.8,#1,
 			     grepl("^Grass2",mName)~0.6,#3, 
 			     grepl("^Grass3",mName)~0.5,#4, 
@@ -216,6 +211,39 @@ fx_edit_final_df <- function(df){
 
 fx_plot_all <- function(df,resvar,plot_name){	
 # Function to plot the random forest results for all four conditions (for all models)
+	# include function-dominance correlation in model name
+	df$mNameFDC <-  paste0(df$mName,'\n (',if(resvar=="Biomass"){df$funcdom}else{df$funcdom_p},')')
+	p <- ggplot(df, aes(x=reorder(varnames,typen), y=sCPI, fill=type)) +
+	    geom_bar(position='dodge',stat='identity') +
+	#            geom_text(aes(label=scientific(CPI, digits = 2),size=10)
+	#    		  ,position = position_dodge(width = 1)
+	#                      ,hjust=0,vjust=0.2,color="black",size=2
+	#                      ,show.legend = FALSE,angle = 90) +
+	    #ggtitle(paste0("Trait importance in determining ",resvar)) +
+	    ylab("Proportion of variance explained") +
+	    #ylab("Conditional permutation importance, \n scaled to r^2") +
+	    #ylab("Conditional permutation importance, \n scaled to correlation") +
+	    xlab("Traits") +
+	    scale_fill_manual(name = "Trait type",
+			       values = c("Resource related" = red,
+					  "Size related" = blue,
+					  "Mixed" = purple)) +
+	    scale_y_continuous(limits = c(0, 1), breaks = seq(0, 1, by = 0.5)) + 
+	    facet_grid(reorder(condition,modeln) ~ reorder(mNameFDC, -if(resvar=="Biomass"){funcdom}else{funcdom_p}), scales = "free_x") +
+	    theme_bw() +
+	    theme(text = element_text(size = 26),legend.position = "right",
+	    axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1),
+	    plot.title = element_text(hjust = 0.5))
+
+	ggsave(file=paste0(tmp_dir,"/randomForest/",plot_name,".png")
+	       , width=13, height=8, dpi=300
+	)
+	while (!is.null(dev.list()))  dev.off()
+	return(p)
+}
+
+fx_plot_all_fdc_plot <- function(df,resvar,plot_name){	
+# Function to plot the random forest results for all four conditions (for all models)
 	plot_fdc <- ggplot(df, aes(x=reorder(mName, -if(resvar=="Biomass"){funcdom}else{funcdom_p}),
 				   y=if(resvar=="Biomass"){funcdom}else{funcdom_p},
 				   fill=-if(resvar=="Biomass"){funcdom}else{funcdom_p})) +
@@ -232,14 +260,15 @@ fx_plot_all <- function(df,resvar,plot_name){
 	#    		  ,position = position_dodge(width = 1)
 	#                      ,hjust=0,vjust=0.2,color="black",size=2
 	#                      ,show.legend = FALSE,angle = 90) +
-	    ggtitle(paste0("Trait importance in determining ",resvar)) +
-	    ylab("Conditional permutation importance, \n scaled to r^2") +
+	    #ggtitle(paste0("Trait importance in determining ",resvar)) +
+	    ylab("Proportion of variance explained") +
+	    #ylab("Conditional permutation importance, \n scaled to r^2") +
 	    #ylab("Conditional permutation importance, \n scaled to correlation") +
 	    xlab("Traits") +
 	    scale_fill_manual(name = "Trait type",
 			       values = c("Resource related" = red,
 					  "Size related" = blue,
-					  "Size/Resource related" = purple)) +
+					  "Mixed" = purple)) +
 	    scale_y_continuous(limits = c(0, 1), breaks = seq(0, 1, by = 0.5)) + 
 	    facet_grid(reorder(condition,modeln) ~ reorder(mName, -if(resvar=="Biomass"){funcdom}else{funcdom_p}), scales = "free_x") +#, space = "free_x") +  # Let the width of facets vary and force all bars to have the same width.
 	    theme_bw() +
@@ -269,20 +298,22 @@ fx_diff <- function(df){
 	mix <- df[df$condition %in% c('Mix.-Meta.'), ] %>%
 		group_by(type, mName, funcdom, funcdom_p) %>%
 		summarize(sCPI=sum(sCPI)) 
-	#print(mono)
-	#print(mix)
 	new_df = mono
 	new_df['sCPI'] = mono['sCPI'] - mix['sCPI'] 
-	
-	#print('FINAL')
-	#print(new_df)
 	return(new_df)
 }
 
 fx_plot_diff_mono_mix <- function(plotName,df){
 # Plot difference (Monoculture-Mixture) in % of biomass or productivity variance explained per trait type
+	print('Difffffff')
+	print(head(df))
+#	df <- df %>%
+#		mutate(sCPI = abs(sCPI))
+	print(head(df))
 	is_productivity = grepl("_P$",plotName)
 	response <- if(is_productivity){"Productivity"}else{"Biomass"}
+	df_stat_smooth <- subset(df,type!="Resource related" | mName!="Dryland")
+	print(df_stat_smooth)
 
 	xlab <- 'Function-dominance correlation'
 	ylab <- paste0("Difference (Monoculture-Mixture) in % of \n",response," variance explained per trait type")
@@ -293,7 +324,9 @@ fx_plot_diff_mono_mix <- function(plotName,df){
 	    geom_text(vjust = "inward", hjust = "inward", color="black") +
     guides(size="none", fill="none") + 
     labs(shape = "Model", x = xlab, y = ylab) +
-    stat_regline_equation(label.x = c(0.25,0.55), label.y = c(1,1),aes(label =  ..adj.rr.label..)) +
+    #stat_regline_equation(label.x = c(0.25,0.55), label.y = c(1,1),aes(label =  ..adj.rr.label..)) +
+    stat_regline_equation(data = df_stat_smooth, label.x = 0.42, label.y = c(0.52,0.46),
+			  aes(label =  ..adj.rr.label..)) +
     geom_point() +
     scale_color_manual(name = "Trait type",
 		      values = c("Resource related" = red,
@@ -301,7 +334,8 @@ fx_plot_diff_mono_mix <- function(plotName,df){
     geom_hline(yintercept=0, linetype='dotted') +
     theme_bw() +
     theme_classic() +
-    theme(text = element_text(size = 14), legend.position = "top", legend.direction = "horizontal") 
+    theme(text = element_text(size = 14), legend.position = c(0.85,0.9)) 
+    #theme(text = element_text(size = 14), legend.position = "top", legend.direction = "horizontal") 
   
   filename <- paste0(plotName,".png")
   #filename <- paste0(plotName,".pdf")
@@ -313,12 +347,16 @@ fx_plot_diff_mono_mix <- function(plotName,df){
 
 fx_plot_diff_mono_mix_smooth <- function(plotName,df){
 # Add regression line to fx_plot_diff_mono_mix
-	#select only data from size related traits & biomass to draw regression line (only condition in which it is significant)
-	df_stat_smooth <- df %>%
-		filter(type == 'Size related')
+#	df <- df %>%
+#		mutate(sCPI = abs(sCPI))
+	#exclude data from Dryland-Resource related for the regression
+	df_stat_smooth <- subset(df,type!="Resource related" | mName!="Dryland")
+#	df_stat_smooth <- df #%>%
+#		filter(type == 'Size related')
 	p1 = fx_plot_diff_mono_mix(plotName,df) + 
 		stat_smooth(data = df_stat_smooth, 
-		method="lm", se= FALSE, linetype='dashed', aes(color=type))
+		method="lm", se= FALSE, linetype='dashed', aes(color=type),
+	       	method.args = list(family = "symmetric"))
 #    stat_smooth(method="lm", linetype='dashed', alpha = 0.2, aes(fill=type, color=type)) +
 #    scale_fill_manual(name = "Trait type",
 #		      values = c("Resource related" = red,

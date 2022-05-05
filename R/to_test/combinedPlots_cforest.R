@@ -310,6 +310,7 @@ d4_P <- fx_diff(d4_P)
 d5h_3_P<- fx_diff(d5h_3_P)
 d6_P <- fx_diff(d6_P)
 df_P <- rbind(d1_P,d2_v_P,d4_P,d5h_3_P,d6_P)
+print("df_P")
 print(df_P)
 #df <- rbind(d1_P,d2_v_P,d3_3_P,d4_P,d5h_3_P,d6_P)
 plotName <- 'Diff_import_P'
