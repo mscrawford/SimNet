@@ -4,6 +4,7 @@ library(dplyr)
 library(scales)
 library(gridExtra)
 library(ggpubr)
+library(ggrepel)
 
 set.seed(1987)
 
@@ -325,30 +326,29 @@ fx_plot_diff_mono_mix <- function(plotName,df){
 	print(head(df))
 	is_productivity = grepl("_P$",plotName)
 	response <- if(is_productivity){"Productivity"}else{"Biomass"}
-	df_stat_smooth <- subset(df,type!="Resource related" | mName!="Dryland")
+	df_stat_smooth <- df
 	print(df_stat_smooth)
 
 	xlab <- 'Function-dominance correlation'
-	ylab <- paste0("Product of monoculture and mixture in % of \n",response," variance explained per trait type")
+	ylab <- expression(sqrt("Monoculture VE * Mixture VE"))
   p1 <- ggplot(df,
                aes(x = if(is_productivity){funcdom_p}else{funcdom},
-                          y = sCPI, label = mName,#size=3, 
-                          color = type)) +
-	    geom_text(vjust = "inward", hjust = "inward", color="black") +
-    guides(size="none", fill="none") + 
+                          y = sCPI, label = mName)) + #size=3 
+                          #color = type)) +
+	    geom_text_repel(color="black", 
+	      guide="none") +
+    #guides(size="none", fill="none") + 
     labs(shape = "Model", x = xlab, y = ylab) +
     #stat_regline_equation(label.x = c(0.25,0.55), label.y = c(1,1),aes(label =  ..adj.rr.label..)) +
-    stat_regline_equation(data = df_stat_smooth, label.x = 0.42, label.y = c(0.52,0.46),
-			  aes(label =  ..adj.rr.label..)) +
-    geom_point() +
-    scale_color_manual(name = "Trait type",
-		      values = c("Resource related" = red,
-				 "Size related" = blue)) +
-    geom_hline(yintercept=0, linetype='dotted') +
+    stat_regline_equation(data = df_stat_smooth, label.x = 0.1, label.y = 0.9, show.legend=FALSE,
+			  aes(label =  ..adj.rr.label..), color=blue, fill=blue) +
+    geom_point(color="black", shape=21, fill=blue) +
+    scale_color_manual(values=blue) +
+    scale_fill_manual(values=blue, guide="none")+
+    #geom_hline(yintercept=0, linetype='dotted') +
     theme_bw() +
     theme_classic() +
-    theme(text = element_text(size = 14), legend.position = c(0.85,0.9)) 
-    #theme(text = element_text(size = 14), legend.position = "top", legend.direction = "horizontal") 
+    theme(text = element_text(size = 14), legend.position = "top", legend.direction = "horizontal") 
   
   filename <- paste0(plotName,".png")
   #filename <- paste0(plotName,".pdf")
@@ -368,7 +368,7 @@ fx_plot_diff_mono_mix_smooth <- function(plotName,df){
 #		filter(type == 'Size related')
 	p1 = fx_plot_diff_mono_mix(plotName,df) + 
 		stat_smooth(data = df_stat_smooth, 
-		method="lm", se= FALSE, linetype='dashed', aes(color=type),
+		method="lm", se= FALSE, linetype='dashed',  color=blue,
 	       	method.args = list(family = "symmetric"))
 #    stat_smooth(method="lm", linetype='dashed', alpha = 0.2, aes(fill=type, color=type)) +
 #    scale_fill_manual(name = "Trait type",

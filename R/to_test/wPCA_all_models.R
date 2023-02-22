@@ -1,6 +1,6 @@
 #setwd(dirname(rstudioapi::getActiveDocumentContext()$path)); setwd("../../")
-#base_dir          <- getwd()
-base_dir          <- setwd("../../")
+base_dir          <- getwd()
+
 scripts_dir       <- paste0(base_dir, "/R")
 tmp_dir           <- paste0(base_dir, "/tmp")
 raw_data_dir      <- paste0(base_dir, "/data/raw")
@@ -109,3 +109,4 @@ DC1 <- fx_wPCA_all_models("DC1",bjoern,1,meta)
 DC2 <- fx_wPCA_all_models("DC2",bjoern,1,iso)
 DC3 <- fx_wPCA_all_models("DC3",bjoern,32,meta)
 DC4 <- fx_wPCA_all_models("DC4",bjoern,32,iso)
+
