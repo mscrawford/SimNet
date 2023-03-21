@@ -164,6 +164,26 @@ fx_read_model <- function(raw_file,models_id){
         return(M)
 }	
 
+fx_calculate_fundcom <- function(){
+	#df <- read.csv(paste0(tmp_dir,"/randomForest/across.csv"))
+	df <- read.csv(paste0("../../tmp/randomForest/across.csv")) %>%
+		filter(Stage == 'With seed inflow')
+	df_b <- df %>%
+		filter(biolFunction == 'Biomass')
+	print(dim(df_b))
+	df_p <- df %>%
+		filter(biolFunction == 'Productivity')
+	df_b <- sapply(split(df_b$pearsonsR, df_b$Model), mean)
+	df_p <- sapply(split(df_p$pearsonsR, df_p$Model), mean)
+	print(head(df_b))
+	print(head(df_p))
+	#return(df_b)
+}
+#   Dryland    Forest1    Forest2     Grass1     Grass2     Grass3
+#0.02883152 0.65389285 0.41819684 0.86731906 0.61501538 0.52386849
+#   Dryland    Forest1    Forest2     Grass1     Grass2     Grass3
+#0.06741089 0.30045951 0.34535055 0.86681479 0.61514350 0.52382344
+
 fx_edit_final_df <- function(df){
 	#print("Edited df")
 # Function to edit the data frame of the random forest results for all four conditions (for all models)
@@ -176,18 +196,18 @@ fx_edit_final_df <- function(df){
 	,typen = case_when(type == "Size related"~0,
 			   type == "Resource related"~1,
 			   type == "Mixed"~0)
-	,funcdom = case_when(mName == "Grass1"~0.8,#1,
-			     grepl("^Grass2",mName)~0.6,#3, 
-			     grepl("^Grass3",mName)~0.5,#4, 
+	,funcdom = case_when(mName == "Grass1"~0.87,#1,
+			     grepl("^Grass2",mName)~0.62,#3, 
+			     grepl("^Grass3",mName)~0.52,#4, 
 			     mName == "Forest1"~0.65,#2, 
-			     grepl("^Forest2",mName)~0.45,#5, 
-			     mName == "Dryland"~0.05)#6)
-	,funcdom_p = case_when(mName == "Grass1"~0.8,#1,
-			     grepl("^Grass2",mName)~0.6,#2, 
-			     grepl("^Grass3",mName)~0.5,#3, 
-			     mName == "Forest1"~0.25,#5,
+			     grepl("^Forest2",mName)~0.42,#5, 
+			     mName == "Dryland"~0.03)#6)
+	,funcdom_p = case_when(mName == "Grass1"~0.87,#1,
+			     grepl("^Grass2",mName)~0.62,#2, 
+			     grepl("^Grass3",mName)~0.52,#3, 
+			     mName == "Forest1"~0.3,#5,
 			     grepl("^Forest2",mName)~0.35,#4, 
-			     mName == "Dryland"~0.1)#6)
+			     mName == "Dryland"~0.07)#6)
 	,modeln = case_when(condition == "Mono.-Meta."~1,
 			   condition == "Mono.-Iso."~2,
 			   condition == "Mix.-Meta."~3,
@@ -232,7 +252,7 @@ fx_plot_all <- function(df,resvar,plot_name){
 	    facet_grid(reorder(condition,modeln) ~ reorder(mNameFDC, -if(resvar=="Biomass"){funcdom}else{funcdom_p}), scales = "free_x") +
 	    theme_bw() +
 	    theme(text = element_text(size = 26),legend.position = "right",
-	    axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1),
+	    axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1), axis.title.y = element_text(size = 24),
 	    plot.title = element_text(hjust = 0.5))
 
 	ggsave(file=paste0(tmp_dir,"/randomForest/",plot_name,".png")
@@ -305,8 +325,6 @@ fx_diff <- function(df){
 
 fx_plot_diff_mono_mix <- function(plotName,df){
 # Plot difference (Monoculture-Mixture) in % of biomass or productivity variance explained per trait type
-	print('Difffffff')
-	print(head(df))
 #	df <- df %>%
 #		mutate(sCPI = abs(sCPI))
 	print(head(df))
@@ -315,11 +333,11 @@ fx_plot_diff_mono_mix <- function(plotName,df){
 	df_stat_smooth <- subset(df,type!="Resource related" | mName!="Dryland")
 	print(df_stat_smooth)
 
-	xlab <- 'Function-dominance correlation'
-	ylab <- paste0("Difference (Monoculture-Mixture) in % of \n",response," variance explained per trait type")
+	ylab <- 'Function-dominance correlation'
+	xlab <- paste0("Difference (Monoculture-Mixture) in % of \n",response," variance explained per trait type")
   p1 <- ggplot(df,
-               aes(x = if(is_productivity){funcdom_p}else{funcdom},
-                          y = sCPI, label = mName,#size=3, 
+               aes(y = if(is_productivity){funcdom_p}else{funcdom},
+                          x = sCPI, label = mName,#size=3, 
                           color = type)) +
 	    geom_text(vjust = "inward", hjust = "inward", color="black") +
     guides(size="none", fill="none") + 
@@ -331,7 +349,7 @@ fx_plot_diff_mono_mix <- function(plotName,df){
     scale_color_manual(name = "Trait type",
 		      values = c("Resource related" = red,
 				 "Size related" = blue)) +
-    geom_hline(yintercept=0, linetype='dotted') +
+    geom_vline(xintercept=0, linetype='dotted') +
     theme_bw() +
     theme_classic() +
     theme(text = element_text(size = 14), legend.position = c(0.85,0.9)) 
@@ -351,8 +369,6 @@ fx_plot_diff_mono_mix_smooth <- function(plotName,df){
 #		mutate(sCPI = abs(sCPI))
 	#exclude data from Dryland-Resource related for the regression
 	df_stat_smooth <- subset(df,type!="Resource related" | mName!="Dryland")
-#	df_stat_smooth <- df #%>%
-#		filter(type == 'Size related')
 	p1 = fx_plot_diff_mono_mix(plotName,df) + 
 		stat_smooth(data = df_stat_smooth, 
 		method="lm", se= FALSE, linetype='dashed', aes(color=type),
