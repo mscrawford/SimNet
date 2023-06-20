@@ -232,14 +232,12 @@ fx_plot_all <- function(df,resvar,plot_name){
 	    scale_y_continuous(limits = c(0, 1), breaks = seq(0, 1, by = 0.5)) + 
 	    facet_grid(reorder(condition,modeln) ~ reorder(mNameFDC, -if(resvar=="Biomass"){funcdom}else{funcdom_p}), scales = "free_x") +
 	    theme_bw() +
-	    theme(text = element_text(size = 26),legend.position = "bottom",
+	    theme(text = element_text(size = 26),legend.position = "right",
 	    axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1),
-	    panel.grid.minor = element_blank(),
-	    panel.grid.major = element_blank(),
 	    plot.title = element_text(hjust = 0.5))
 
 	ggsave(file=paste0(tmp_dir,"/randomForest/",plot_name,".png")
-	       , width=13, height=9, dpi=300
+	       , width=13, height=8, dpi=300
 	)
 	while (!is.null(dev.list()))  dev.off()
 	return(p)

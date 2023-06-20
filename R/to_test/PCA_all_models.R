@@ -36,14 +36,14 @@ modelName <- "Grass3"
 G3PCA_corr <- fx_correlation_plot(modelName,G3PCA)
 ##
 #print('coords')
-#ind <- get_pca_ind(G3PCA)
-##df <- ind$coord
+ind <- get_pca_ind(G3PCA)
+df <- ind$coord
 ##
-##IBC_grass$PC1score <- df[,1]
-##IBC_grass$PC2score <- df[,2]
-##IBC_grass$PC3score <- df[,3]
-##fileName = paste0(tmp_dir,"/PCA/Grass3_PCAcoord.Rda")
-##saveRDS(IBC_grass,file=fileName)
+IBC_grass$PC1score <- df[,1]
+IBC_grass$PC2score <- df[,2]
+IBC_grass$PC3score <- df[,3]
+fileName = paste0(tmp_dir,"/PCA/Grass3_PCAcoord.Rda")
+saveRDS(IBC_grass,file=fileName)
 ##
 ###pcr_model <- pcr(Biomass~LMR+MaxMass+Gmax+SLA+meanSpacerLength, data=IBC_grass, scale =TRUE, validation="CV")
 ###summary(pcr_model)
@@ -51,7 +51,7 @@ G3PCA_corr <- fx_correlation_plot(modelName,G3PCA)
 #prin()
 #
 #### Forest2 (TROLL)
-#source(paste0(scripts_dir, "/to_test/readTROLL.R"))
+source(paste0(scripts_dir, "/to_test/readTROLL.R"))
 #
 #troll <- models$Forest2 %>%
 #    ungroup() %>% # There shouldn't be groups anyways

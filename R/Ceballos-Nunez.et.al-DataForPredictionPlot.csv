@@ -1,0 +1,9 @@
+Traits,Importance,Strong/Weak,Trait Type,Monoculture/Mixture
+A,0.75,Strong,Size related,Monoculture
+B,0.1,Strong,Resource related,Monoculture
+A,0.75,Weak,Size related,Monoculture
+B,0.1,Weak,Resource related,Monoculture
+A,0.75,Strong,Size related,Mixture
+B,0.25,Strong,Resource related,Mixture
+A,0.33,Weak,Size related,Mixture
+B,0.66,Weak,Resource related,Mixture
