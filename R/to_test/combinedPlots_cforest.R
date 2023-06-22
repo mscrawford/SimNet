@@ -264,6 +264,8 @@ fx_plot_all(all_d,resvar,pN5)
 all_d <- all_d[all_d$condition %in% c('Mono.-Meta.','Mix.-Meta.'), ]
 all_d[all_d == "Mono.-Meta."] <- "Monoculture"
 all_d[all_d == "Mix.-Meta."] <- "Mixture"
+all_d[all_d == "monoBiomass"] <- "*monoBiomass"
+all_d[all_d == "rootingVolume"] <- "*rootingVolume"
 bio_df <- all_d
 fx_plot_all(all_d,resvar,paste0(pN6,"_v"))
 print(head(all_d))

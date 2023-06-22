@@ -1,15 +1,21 @@
 library(png)
+library(readr)
+
 base_dir          <- setwd("../../")
 scripts_dir       <- paste0(base_dir, "/R")
 tmp_dir           <- paste0(base_dir, "/tmp")
 raw_data_dir      <- paste0(base_dir, "/data/raw")
+store_dir         <- paste0(tmp_dir,"/traits_vs_biomass/")
 
 #source(paste0(scripts_dir, "/readModels.R"))
 source(paste0(scripts_dir, "/to_test/fx_traits_vs_biomass.R"))
 source(paste0(scripts_dir, "/to_test/fx_cforest_party.R"))
 
 ### Grass1 (Adam's model)
-adam <- fx_read_model("readAdam.R", "Grass1") %>%
+adam <- fx_read_model("readAdam.R", "Grass1")
+file_name <- paste0(store_dir,"adam.csv")
+write.csv(adam, file_name, row.names=FALSE)
+adam <- read_csv(file_name) %>%
 	mutate(r_pNi = 1/pNi) #rpNi = reciprocal of pNi
 
 lab1 <- "monoBiomass" #"no3i (nitrogen R*)"
@@ -23,6 +29,10 @@ G1C3 <- fx_traits_vs_biomass_jitter("G1C3",adam,32,meta,"abmi","r_pNi",lab1,lab2
 ### Grass2 (Lindsay's model)
 lindsay <- fx_read_model("readLindsay_variable.R","Grass2") 
 
+file_name <- paste0(store_dir,"lindsay.csv")
+write.csv(lindsay, file_name, row.names=FALSE)
+lindsay <- read_csv(file_name)
+
 lab1 <- "rootingVolume" #"Vi (volume of soil \n accessible to species i)"
 lab2 <- "NUE2" #thetai (Nitrogen uptake \n rate per unit plant biomass)"
 
@@ -32,7 +42,11 @@ G2C3 <- fx_traits_vs_biomass_jitter("G2C3",lindsay,32,meta,"Vi","thetai",lab1,la
 #G2C4 <- fx_traits_vs_biomass_jitter("G2C4",lindsay,32,iso,"Vi","thetai",lab1,lab2)
 
 ### Grass3 (IBC-grass)
-IBC_grass <- readRDS(paste0(tmp_dir,"/PCA/Grass3_PCAcoord.Rda")) %>%
+IBC_grass <- readRDS(paste0(tmp_dir,"/PCA/Grass3_PCAcoord.Rda"))
+
+file_name <- paste0(store_dir,"IBC_grass.csv")
+write.csv(IBC_grass, file_name, row.names=FALSE)
+IBC_grass <- read_csv(file_name) %>%
 	select(Rep, Ninitial, SpeciesID, Year, Stage, Productivity, Biomass, PC1score, PC2score, PC3score) %>%
 	mutate(PC2score = -PC2score) %>%
 	mutate(PC3score = -PC3score) %>%
@@ -55,6 +69,10 @@ G3C3 <- fx_traits_vs_biomass_jitter("G3C3",IBC_grass,32,meta,"PC2score","PC1scor
 #### Forest1 (PPA)
 PPA <- fx_read_model("readPPA.R","Forest1")
 
+file_name <- paste0(store_dir,"PPA.csv")
+write.csv(PPA, file_name, row.names=FALSE)
+PPA <- read_csv(file_name)
+
 lab1 <- "paceOfLife" #"PC1score (associated \n with fast-slow lifecycle)"#plant height)"
 lab2 <- "MaxHeight" #"PC2score (associated \n with tree stature)"# LMA -leaf mass per area)"
 
@@ -69,7 +87,11 @@ F1C3_P <- fx_traits_vs_biomass_jitter("F1C3_P",PPA,32,meta,"PC2score","PC1score"
 #F1C4_P <- fx_traits_vs_biomass_jitter("F1C4_P",PPA,32,iso,"PC2score","PC1score",lab2,lab1)
 
 ### Forest2 (TROLL) h_realmax
-troll <- readRDS(paste0(tmp_dir,"/PCA/Forest2_hrm_PCAcoord.Rda")) %>%
+troll <- readRDS(paste0(tmp_dir,"/PCA/Forest2_hrm_PCAcoord.Rda"))
+
+file_name <- paste0(store_dir,"troll.csv")
+write.csv(troll, file_name, row.names=FALSE)
+troll <- read_csv(file_name) %>%
 	select(c(Rep, Ninitial, SpeciesID, Year, Stage, Productivity, Biomass, PC1score, PC2score, PC3score)) %>%
 	mutate(PC1score = -PC1score) %>%
 	mutate(PC3score = -PC3score) %>%
@@ -101,8 +123,12 @@ F2C3_P <- fx_traits_vs_biomass_jitter("F2C3_hrm_P",troll,32,meta,"PC2score","PC1
 #r2C4_P <- fx_traits_vs_biomass_jitter("F2C4_hrm_P",troll,32,iso,"PC2score","PC1score",lab2,lab1)
 
 #### Dryland (Bjoern)
-bjoern <- fx_read_model("readBjoern.R","bjoern") %>%
-	select(-pRoot)
+#bjoern <- fx_read_model("readBjoern.R","bjoern") %>%
+#	select(-pRoot)
+
+file_name <- paste0(store_dir,"bjoern.csv")
+#write.csv(bjoern, file_name, row.names=FALSE)
+bjoern <- read_csv(file_name)
 
 lab1 <- "maxBiomass" #(maximum \n size/size at maturity) [gC]"
 lab2 <- "leafAllocation" #"pLeaf (allocation \n to leaf) [gC/gC]"
@@ -146,7 +172,7 @@ F2C3_P <- readPNG(paste0(path,"F2C3_hrm_P.png"))
 DC1_P <- readPNG(paste0(path,"DC1_P.png"))
 DC3_P <- readPNG(paste0(path,"DC3_P.png"))
 
-png(paste0(path, "all_scatter_plots_biomass"), 
+png(paste0(path, "all_scatter_plots_biomass.png"), 
     width = 1663, height = 3061.5, units = "px", pointsize = 40,  res = NA,
     bg = "white", type = c("cairo", "cairo-png", "Xlib", "quartz"))
 par(mar=c(0,0,1,0))

@@ -80,11 +80,12 @@ fx_correlation_plot <- function(modelName,PCAresult){
 			  grepl("^F",modelName) ~c('LES2','maxHeight','woodDensity'))
 	colnames(df) <- paste0(colnames(df),"\n (",var_exp,")")  
 	
-	pdf(file = paste0(tmp_dir,"/PCA/Corr_",modelName,".pdf"), family = "sans",height = 7, width = 5)
+	pdf(file = paste0(tmp_dir,"/PCA/Corr_",modelName,".pdf"), family = "sans",height = 6.9, width = 5.9)
 	corrplot(df, col=colorRampPalette(c("#B2182B","#FDDBC7","#2166AC"))(6), 
-		 addCoef.col = "black", details=FALSE, mar = c(0,0,0,0), type = "lower",
+		 addCoef.col = "black", cl.align.text = "l")
+		 #addCoef.col = "black", details=FALSE, mar = c(0,0,0,0), type = "lower",
 		 #title = "Correlation of variables with each dimension", 
-		 cex.col=2.5, cex.var=3.5, digits=1, cl.cex = 1.25)
+		 #cex.col=2.5, cex.var=3.5, digits=1, cl.cex = 1.25)
 	dev.off()
 	return()
 }

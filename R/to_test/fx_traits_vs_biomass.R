@@ -47,17 +47,16 @@ fx_traits_vs_biomass <- function(plotName,model,NoSpp,stage,g_by,trait1,trait2,x
   return(p1)
 }
 
-fx_traits_vs_biomass_jitter <- function(plotName,model,NoSpp,stage,driver,response,xlab,ylab){
-	print(head(model))
+fx_traits_vs_biomass_jitter <- function(plotName,df,NoSpp,stage,driver,response,xlab,ylab){
 	is_productivity = grepl("_P$",plotName)
 	response <- if(is_productivity){"Productivity"}else{"Biomass"}
-	model <- model %>%
+	df <- df %>%
 	filter(Ninitial == NoSpp,
 	       Year %in% stage) %>%
-	select(-Rep, -Ninitial)
-	model <- aggregate(.~SpeciesID,data=model, mean)
+	select(-Rep, -Ninitial,-Year,-Ninitial,-Stage)
+	df <- aggregate(. ~ SpeciesID, data = df, mean) #Calculate mean response per specie
 
-	model.32 <- model %>%
+	df.32 <- df %>%
 	#mutate(Biomass = scales::rescale(Biomass, to = c(0, 100))) %>%
 	filter(Biomass > 0) %>%
 	mutate(Biomass = log(Biomass)) %>%
@@ -65,13 +64,13 @@ fx_traits_vs_biomass_jitter <- function(plotName,model,NoSpp,stage,driver,respon
 	filter(Productivity > 0) %>%
 	mutate(Productivity = log(Productivity))
 	
-	model.032 <- model %>%
+	df.032 <- df %>%
 	filter(Biomass == 0) %>%
 	filter(Productivity == 0)
 	
-	jf_1 <- unlist(model[driver])
+	jf_1 <- unlist(df[driver])
 	jf1 <- median(jf_1)*0.06
-	jf_2 <- unlist(model.32[response])
+	jf_2 <- unlist(df.32[response])
 	jf2 <- median(jf_2)*0.06
 	bmin <- min(jf_2) #*0.06
 	bmax <- max(jf_2) #*0.06
@@ -86,14 +85,14 @@ fx_traits_vs_biomass_jitter <- function(plotName,model,NoSpp,stage,driver,respon
 			       grepl("^D",plotName) ~'Dryland')
 	print(modelName)
   p1 <- ggplot() +
-    geom_point(data = model.32,
+    geom_point(data = df.32,
                aes_string(y = response,
                           x = driver,
                           color = response, alpha = 0.8,
                           size = response),
                position=position_jitter(h=jf2, w=jf1)) +
     ggtitle(modelName) + 
-    geom_point(data = model.032, shape = 4,
+    geom_point(data = df.032, shape = 4,
                aes_string(x = driver,
                           y = response),
                position=position_jitter(h=jf2, w=jf1)) +
