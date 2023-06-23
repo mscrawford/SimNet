@@ -47,7 +47,8 @@ fx_traits_vs_biomass <- function(plotName,model,NoSpp,stage,g_by,trait1,trait2,x
   return(p1)
 }
 
-fx_traits_vs_biomass_jitter <- function(plotName,df,NoSpp,stage,driver,response,xlab,ylab){
+#fx_traits_vs_biomass_jitter <- function(plotName,df,NoSpp,stage,driver,response,xlab,ylab){
+fx_traits_vs_biomass_jitter <- function(plotName,df,NoSpp,stage,trait1,trait2,xlab,ylab){
 	is_productivity = grepl("_P$",plotName)
 	response <- if(is_productivity){"Productivity"}else{"Biomass"}
 	df <- df %>%
@@ -68,9 +69,9 @@ fx_traits_vs_biomass_jitter <- function(plotName,df,NoSpp,stage,driver,response,
 	filter(Biomass == 0) %>%
 	filter(Productivity == 0)
 	
-	jf_1 <- unlist(df[driver])
+	jf_1 <- unlist(df[trait1])
 	jf1 <- median(jf_1)*0.06
-	jf_2 <- unlist(df.32[response])
+	jf_2 <- unlist(df.32[trait2])
 	jf2 <- median(jf_2)*0.06
 	bmin <- min(jf_2) #*0.06
 	bmax <- max(jf_2) #*0.06
@@ -86,15 +87,15 @@ fx_traits_vs_biomass_jitter <- function(plotName,df,NoSpp,stage,driver,response,
 	print(modelName)
   p1 <- ggplot() +
     geom_point(data = df.32,
-               aes_string(y = response,
-                          x = driver,
+               aes_string(y = trait1,
+                          x = trait2,
                           color = response, alpha = 0.8,
                           size = response),
                position=position_jitter(h=jf2, w=jf1)) +
     ggtitle(modelName) + 
     geom_point(data = df.032, shape = 4,
-               aes_string(x = driver,
-                          y = response),
+               aes_string(x = trait1,
+                          y = trait2),
                position=position_jitter(h=jf2, w=jf1)) +
     scale_size_continuous(name = "Prop.",
                           breaks = c(bmin,bmean,bmax),#c(1,50,100),
