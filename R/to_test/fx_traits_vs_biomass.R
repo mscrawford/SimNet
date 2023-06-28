@@ -73,10 +73,10 @@ fx_traits_vs_biomass_jitter <- function(plotName,df,NoSpp,stage,trait1,trait2,xl
 	jf1 <- median(jf_1)*0.06
 	jf_2 <- unlist(df.32[trait2])
 	jf2 <- median(jf_2)*0.06
+	xmax <- max(jf_1) + (max(jf_1) *0.06)
 	bmin <- min(jf_2) #*0.06
 	bmax <- max(jf_2) #*0.06
 	bmean <- mean(jf_2)#(bmax+bmin)/2
-	print(paste(bmin,", ", bmean,", ",bmax))
 
 	modelName <- case_when(grepl("^G1",plotName) ~'Grass 1',
 			       grepl("^G2",plotName) ~'Grass 2',
@@ -87,11 +87,13 @@ fx_traits_vs_biomass_jitter <- function(plotName,df,NoSpp,stage,trait1,trait2,xl
 	print(modelName)
   p1 <- ggplot() +
     geom_point(data = df.32,
-               aes_string(y = trait1,
-                          x = trait2,
+               aes_string(x = trait1,
+                          y = trait2,
                           color = response, alpha = 0.8,
                           size = response),
                position=position_jitter(h=jf2, w=jf1)) +
+    ylim(NA, (bmax+(bmax*0.06))) +
+    xlim(NA, (xmax+(xmax*0.06))) +
     ggtitle(modelName) + 
     geom_point(data = df.032, shape = 4,
                aes_string(x = trait1,

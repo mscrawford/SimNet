@@ -123,14 +123,14 @@ if(SAVE_CACHE){model <- fx_read_model("readPPA.R","Forest1")
 modelName = "Forest1"
 fileName = paste0(tmp_dir,"/randomForest/",modelName,".Rda")
 d4 <- fx_cforest(model,modelName,fileName)
-d4[d4 == "PC1score"] <- "paceOfLife"	
+d4[d4 == "PC1score"] <- "GrowthSurvival"	
 d4[d4 == "PC2score"] <- "MaxHeight"	
 
 #Productivity
 modelName = "Forest1_P"
 fileName = paste0(tmp_dir,"/randomForest/",modelName,".Rda")
 d4_P <- fx_cforest(model,modelName,fileName)
-d4_P[d4_P == "PC1score"] <- "paceOfLife"	
+d4_P[d4_P == "PC1score"] <- "GrowthSurvival"	
 d4_P[d4_P == "PC2score"] <- "MaxHeight"	
 
 ### Forest2 (TROLL)
