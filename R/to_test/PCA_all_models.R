@@ -94,7 +94,8 @@ troll <- models$Forest2 %>%
    mutate(log_lma = log(lma)) %>%
    mutate(log_nmass = log(nmass)) %>%
    mutate(log_pmass = log(pmass)) %>%
-   select(-lma, -nmass, -pmass)
+   select(-lma, -nmass, -pmass) %>%
+   rename(Hmax = h_realmax, LMA = log_lma, leafN = log_nmass, leafP = log_pmass, WD = wsg)
 
 #   mutate(log_wsg = log(wsg)) 
 

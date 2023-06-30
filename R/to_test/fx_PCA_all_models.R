@@ -47,7 +47,7 @@ fx_PCA <- function(modelName,model){
 	       	theme_minimal() +
 	       	theme(text = element_text(size = 16))
 
-        ggsave(paste0(tmp_dir,"/PCA/PCA_",modelName,".pdf"))
+        ggsave(paste0(tmp_dir,"/PCA/PCA_",modelName,".png"))
         #ggsave(paste0(tmp_dir,"/PCA/PCA_",modelName,".pdf"), width=9, height=7, dpi=300)
         while (!is.null(dev.list()))  dev.off()
         return(model.pca)
@@ -77,10 +77,13 @@ fx_correlation_plot <- function(modelName,PCAresult){
 	var_exp <- round(var_exp[1:num_dim], 2)
 	colnames(df)[colnames(df) == c("Dim.1","Dim.2","Dim.3")] <- 
 		case_when(grepl("^G",modelName) ~c('LES1','Size/Growth','Spacing'), 
-			  grepl("^F",modelName) ~c('LES2','maxHeight','woodDensity'))
+			  grepl("^F",modelName) ~c('LES2','MaxHeight','woodDensity'))
 	colnames(df) <- paste0(colnames(df),"\n (",var_exp,")")  
 	
-	pdf(file = paste0(tmp_dir,"/PCA/Corr_",modelName,".pdf"), family = "sans",height = 6.9, width = 5.9)
+	png(paste0(tmp_dir,"/PCA/Corr_",modelName,".png")
+	    #,family = "sans"
+	    ,height = 600, width = case_when(grepl("^G",modelName) ~ 600, grepl("^F",modelName) ~472), units = "px", pointsize = 20)
+	plot.new()
 	corrplot(df, col=colorRampPalette(c("#B2182B","#FDDBC7","#2166AC"))(6), 
 		 addCoef.col = "black", cl.align.text = "l")
 		 #addCoef.col = "black", details=FALSE, mar = c(0,0,0,0), type = "lower",

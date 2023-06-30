@@ -112,8 +112,6 @@ d3_3_P <- fx_cforest(model,modelName,fileName)
 d3_3_P[d3_3_P == "PC1score"] <- "LES1" #"leaf eco. spectrum"
 d3_3_P[d3_3_P == "PC2score"] <- "Size/Growth"	
 d3_3_P[d3_3_P == "PC3score"] <- "Spacing"
-#READ_CACHE <- TRUE 
-#SAVE_CACHE <- FALSE
 
 ### Forest1 (PPA)
 if(SAVE_CACHE){model <- fx_read_model("readPPA.R","Forest1")
@@ -133,8 +131,12 @@ d4_P <- fx_cforest(model,modelName,fileName)
 d4_P[d4_P == "PC1score"] <- "GrowthSurvival"	
 d4_P[d4_P == "PC2score"] <- "MaxHeight"	
 
+#READ_CACHE <- FALSE
+#SAVE_CACHE <- TRUE
 ### Forest2 (TROLL)
-if(SAVE_CACHE){model <- fx_read_model("readTROLL.R","Forest2")
+if(SAVE_CACHE){model <- fx_read_model("readTROLL.R","Forest2") %>%
+		rename(LMA = lma, leafN = nmass, leafP = pmass, WD = wsg)
+
 }else{}
 
 #Biomass
@@ -170,12 +172,15 @@ d5h_2_P <- fx_cforest(model,modelName,fileName)
 ### Forest2 (TROLL) h_realmax
 if(SAVE_CACHE){model <- fx_read_model("readTROLL.R","Forest2") %>%
 		mutate(h_realmax = hmax * dmax / (dmax + ah)) %>%
-		select(-hmax, -ah, -dmax)
+		select(-hmax, -ah, -dmax) %>%
+		rename(Hmax = h_realmax, LMA = lma, leafN = nmass, leafP = pmass, WD = wsg)
+print(paste0("After rename",head(model)))
 }else{}
 
 #Biomass
 modelName = "Forest2_hrealmax"
 fileName = paste0(tmp_dir,"/randomForest/",modelName,".Rda")
+
 d5h <- fx_cforest(model,modelName,fileName)
 
 #Productivity
@@ -190,6 +195,9 @@ d5h_P <- fx_cforest(model,modelName,fileName)
 #t3 <- model[which(model$Stage == 'Without seed inflow' & model$Ninitial == 32), ]
 #mean(t3$Biomass)
 #sd(t3$Biomass)
+
+#READ_CACHE <- TRUE 
+#SAVE_CACHE <- FALSE
 
 ### Forest2 (TROLL) h_realmax PCA - 3 components
 if(SAVE_CACHE){model <- readRDS(paste0(tmp_dir,"/PCA/Forest2_hrm_PCAcoord.Rda")) %>%
@@ -258,8 +266,8 @@ fx_plot_all(all_d,resvar,pN5)
 all_d <- all_d[all_d$condition %in% c('Mono.-Meta.','Mix.-Meta.'), ]
 fx_plot_all(all_d,resvar,pN6)
 
-## PCA 3 components for Grass 3, Grass 2 variable
-all_d <- rbind(d1,d2_v,d3_3,d4,d5h_3,d6)
+## Grass 2 variable
+all_d <- rbind(d3,d5h)
 fx_plot_all(all_d,resvar,pN5)
 all_d <- all_d[all_d$condition %in% c('Mono.-Meta.','Mix.-Meta.'), ]
 all_d[all_d == "Mono.-Meta."] <- "Monoculture"
@@ -267,31 +275,43 @@ all_d[all_d == "Mix.-Meta."] <- "Mixture"
 all_d[all_d == "monoBiomass"] <- "*monoBiomass"
 all_d[all_d == "rootingVolume"] <- "*rootingVolume"
 bio_df <- all_d
-fx_plot_all(all_d,resvar,paste0(pN6,"_v"))
+fx_plot_G3_F2(all_d,resvar,"FigS3")
 print(head(all_d))
 
-#Productivity
-resvar = "Productivity"
-all_d_P <- rbind(d1_P,d2_P,d3_P,d4_P,d5h_P,d6_P)
-fx_plot_all(all_d_P,resvar,paste0(pN1,"_P"))
-all_d_P <- all_d_P[all_d_P$condition %in% c('Mono.-Meta.','Mix.-Meta.'), ]
-fx_plot_all(all_d_P,resvar,paste0(pN2,"_P"))
-
-## PCA 3 components for Grass 3
-all_d_P <- rbind(d1_P,d2_P,d3_3_P,d4_P,d5h_3_P,d6_P)
-fx_plot_all(all_d_P,resvar,paste0(pN5,"_P"))
-all_d_P <- all_d_P[all_d_P$condition %in% c('Mono.-Meta.','Mix.-Meta.'), ]
-fx_plot_all(all_d_P,resvar,paste0(pN6,"_P"))
-
-## PCA 3 components for Grass 3, Grass 2 variable
-all_d_P <- rbind(d1_P,d2_v_P,d3_3_P,d4_P,d5h_3_P,d6_P)
-fx_plot_all(all_d_P,resvar,paste0(pN5,"_v_P"))
-all_d_P <- all_d_P[all_d_P$condition %in% c('Mono.-Meta.','Mix.-Meta.'), ]
-all_d_P[all_d_P == "Mono.-Meta."] <- "Monoculture"
-all_d_P[all_d_P == "Mix.-Meta."] <- "Mixture"
-prod_df <- all_d_P
-fx_plot_all(all_d_P,resvar,paste0(pN6,"_v_P"))
-print(head(all_d_P))
+### PCA 3 components for Grass 3, Grass 2 variable
+#all_d <- rbind(d1,d2_v,d3_3,d4,d5h_3,d6)
+#fx_plot_all(all_d,resvar,pN5)
+#all_d <- all_d[all_d$condition %in% c('Mono.-Meta.','Mix.-Meta.'), ]
+#all_d[all_d == "Mono.-Meta."] <- "Monoculture"
+#all_d[all_d == "Mix.-Meta."] <- "Mixture"
+#all_d[all_d == "monoBiomass"] <- "*monoBiomass"
+#all_d[all_d == "rootingVolume"] <- "*rootingVolume"
+#bio_df <- all_d
+#fx_plot_all(all_d,resvar,paste0(pN6,"_v"))
+#print(head(all_d))
+#
+##Productivity
+#resvar = "Productivity"
+#all_d_P <- rbind(d1_P,d2_P,d3_P,d4_P,d5h_P,d6_P)
+#fx_plot_all(all_d_P,resvar,paste0(pN1,"_P"))
+#all_d_P <- all_d_P[all_d_P$condition %in% c('Mono.-Meta.','Mix.-Meta.'), ]
+#fx_plot_all(all_d_P,resvar,paste0(pN2,"_P"))
+#
+### PCA 3 components for Grass 3
+#all_d_P <- rbind(d1_P,d2_P,d3_3_P,d4_P,d5h_3_P,d6_P)
+#fx_plot_all(all_d_P,resvar,paste0(pN5,"_P"))
+#all_d_P <- all_d_P[all_d_P$condition %in% c('Mono.-Meta.','Mix.-Meta.'), ]
+#fx_plot_all(all_d_P,resvar,paste0(pN6,"_P"))
+#
+### PCA 3 components for Grass 3, Grass 2 variable
+#all_d_P <- rbind(d1_P,d2_v_P,d3_3_P,d4_P,d5h_3_P,d6_P)
+#fx_plot_all(all_d_P,resvar,paste0(pN5,"_v_P"))
+#all_d_P <- all_d_P[all_d_P$condition %in% c('Mono.-Meta.','Mix.-Meta.'), ]
+#all_d_P[all_d_P == "Mono.-Meta."] <- "Monoculture"
+#all_d_P[all_d_P == "Mix.-Meta."] <- "Mixture"
+#prod_df <- all_d_P
+#fx_plot_all(all_d_P,resvar,paste0(pN6,"_v_P"))
+#print(head(all_d_P))
 
 # Difference plots Biomass
 d1 <- fx_diff(d1)

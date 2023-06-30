@@ -21,7 +21,7 @@ fx_cforest_single_condition <- function(modelName,model,NoSpp,stage){
 	# Prepare data before cforest analysis
 	is_productivity = grepl("_P$",modelName)
 	#print("Single cond")
-	sizeT <- c("abmi","Vi","MaxMass","PC2score","dmax","ah","hmax","h_realmax","maxSize")
+	sizeT <- c("abmi","Vi","MaxMass","PC2score","dmax","ah","hmax","h_realmax","maxSize","Hmax","MaxHeight")
         model <- model %>%
             filter(Ninitial == NoSpp,
                    Year %in% stage) %>%
@@ -226,9 +226,10 @@ fx_plot_all <- function(df,resvar,plot_name){
 	    #ylab("Conditional permutation importance, \n scaled to correlation") +
 	    xlab("Traits") +
 	    scale_fill_manual(name = "Trait type",
-			       values = c("Resource related" = red,
+			      values = c("Resource related" = red,
 					  "Size related" = blue,
-					  "Mixed" = purple)) +
+					  "Mixed" = purple),
+			      labels = c("Mixed","Resource", "Size")) +
 	    scale_y_continuous(limits = c(0, 1), breaks = seq(0, 1, by = 0.5)) + 
 	    facet_grid(reorder(condition,modeln) ~ reorder(mNameFDC, -if(resvar=="Biomass"){funcdom}else{funcdom_p}), scales = "free_x") +
 	    theme_bw() +
@@ -240,6 +241,42 @@ fx_plot_all <- function(df,resvar,plot_name){
 
 	ggsave(file=paste0(tmp_dir,"/randomForest/",plot_name,".png")
 	       , width=13, height=9, dpi=300
+	)
+	while (!is.null(dev.list()))  dev.off()
+	return(p)
+}
+
+fx_plot_G3_F2 <- function(df,resvar,plot_name){	
+# Function to plot the random forest results for all four conditions (for all models)
+	# include function-dominance correlation in model name
+	df$mNameFDC <-  paste0(df$mName,'\n (',if(resvar=="Biomass"){df$funcdom}else{df$funcdom_p},')')
+	p <- ggplot(df, aes(x=reorder(varnames,typen), y=sCPI, fill=type)) +
+	    geom_bar(position='dodge',stat='identity') +
+	#            geom_text(aes(label=scientific(CPI, digits = 2),size=10)
+	#    		  ,position = position_dodge(width = 1)
+	#                      ,hjust=0,vjust=0.2,color="black",size=2
+	#                      ,show.legend = FALSE,angle = 90) +
+	    #ggtitle(paste0("Trait importance in determining ",resvar)) +
+	    ylab("Proportion of variance explained") +
+	    #ylab("Conditional permutation importance, \n scaled to r^2") +
+	    #ylab("Conditional permutation importance, \n scaled to correlation") +
+	    xlab("Traits") +
+	    scale_fill_manual(name = "Trait type",
+			      values = c("Resource related" = red,
+					  "Size related" = blue,
+					  "Mixed" = purple),
+			      labels = c("Resource", "Size")) +
+	    scale_y_continuous(limits = c(0, 1), breaks = seq(0, 1, by = 0.5)) + 
+	    facet_grid(reorder(condition,modeln) ~ reorder(mNameFDC, -if(resvar=="Biomass"){funcdom}else{funcdom_p}), scales = "free_x") +
+	    theme_bw() +
+	    theme(text = element_text(size = 26),legend.position = "bottom",
+	    axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1),
+	    panel.grid.minor = element_blank(),
+	    panel.grid.major = element_blank(),
+	    plot.title = element_text(hjust = 0.5))
+
+	ggsave(file=paste0(tmp_dir,"/randomForest/",plot_name,".png")
+	       , width=9, height=9, dpi=300
 	)
 	while (!is.null(dev.list()))  dev.off()
 	return(p)
@@ -271,7 +308,8 @@ fx_plot_all_fdc_plot <- function(df,resvar,plot_name){
 	    scale_fill_manual(name = "Trait type",
 			       values = c("Resource related" = red,
 					  "Size related" = blue,
-					  "Mixed" = purple)) +
+					  "Mixed" = purple),
+			      labels = c("Mixed","Resource", "Size")) +
 	    scale_y_continuous(limits = c(0, 1), breaks = seq(0, 1, by = 0.5)) + 
 	    facet_grid(reorder(condition,modeln) ~ reorder(mName, -if(resvar=="Biomass"){funcdom}else{funcdom_p}), scales = "free_x") +#, space = "free_x") +  # Let the width of facets vary and force all bars to have the same width.
 	    theme_bw() +
