@@ -11,12 +11,17 @@ store_dir         <- paste0(tmp_dir,"/traits_vs_biomass/")
 source(paste0(scripts_dir, "/to_test/fx_traits_vs_biomass.R"))
 source(paste0(scripts_dir, "/to_test/fx_cforest_party.R"))
 
+READ_CACHE <- FALSE
+SAVE_CACHE <- TRUE
+#READ_CACHE <- TRUE 
+#SAVE_CACHE <- FALSE
+
 ### Grass1 (Adam's model)
-#adam <- fx_read_model("readAdam.R", "Grass1")
 file_name <- paste0(store_dir,"adam.csv")
-#write.csv(adam, file_name, row.names=FALSE)
-adam <- read_csv(file_name) %>%
-	mutate(r_pNi = 1/pNi) #rpNi = reciprocal of pNi
+if(SAVE_CACHE){adam <- fx_read_model("readAdam.R", "Grass1") %>%
+	       mutate(r_pNi = 1/pNi) #rpNi = reciprocal of pNi
+               write.csv(adam, file_name, row.names=FALSE)
+}else{adam <- read_csv(file_name)}
 
 lab1 <- "monoBiomass" #"no3i (nitrogen R*)"
 lab2 <- "NUE1" #"r_pNi (reciprocal of \n aboveground N concentration)"
@@ -27,11 +32,12 @@ G1C3 <- fx_traits_vs_biomass_jitter("G1C3",adam,32,meta,"abmi","r_pNi",lab1,lab2
 #G1C4 <- fx_traits_vs_biomass_jitter("G1C4",adam,32,iso,"abmi","r_pNi",lab1,lab2)
 
 ### Grass2 (Lindsay's model)
-#lindsay <- fx_read_model("readLindsay_variable.R","Grass2") 
 
 file_name <- paste0(store_dir,"lindsay.csv")
-#write.csv(lindsay, file_name, row.names=FALSE)
-lindsay <- read_csv(file_name)
+if(SAVE_CACHE){lindsay <- fx_read_model("readLindsay_variable.R","Grass2") %>%
+	       mutate(thetai = 1/thetai) # reciprocal of thetai (NUE2)
+               write.csv(lindsay, file_name, row.names=FALSE)
+}else{lindsay <- read_csv(file_name)}
 #formatC(lindsay["Vi"], format = "e", digits = 0)
 
 lab1 <- "rootingVolume" #"Vi (volume of soil \n accessible to species i)"
@@ -43,18 +49,16 @@ G2C3 <- fx_traits_vs_biomass_jitter("G2C3",lindsay,32,meta,"Vi","thetai",lab1,la
 #G2C4 <- fx_traits_vs_biomass_jitter("G2C4",lindsay,32,iso,"Vi","thetai",lab1,lab2)
 
 ### Grass3 (IBC-grass)
-#IBC_grass <- readRDS(paste0(tmp_dir,"/PCA/Grass3_PCAcoord.Rda"))
 
 file_name <- paste0(store_dir,"IBC_grass.csv")
-#write.csv(IBC_grass, file_name, row.names=FALSE)
-IBC_grass <- read_csv(file_name) %>%
-	select(Rep, Ninitial, SpeciesID, Year, Stage, Productivity, Biomass, PC1score, PC2score, PC3score) %>%
-	mutate(PC2score = -PC2score) %>%
-	mutate(PC3score = -PC3score) %>%
-	mutate(id = row_number()) %>%
-	mutate_if(is.character, as.factor) #%>%
-	#mutate(Biomass = scales::rescale(Biomass, to = c(0, 100))) %>%
-	#mutate(Productivity = scales::rescale(Productivity, to = c(0, 100)))
+if(SAVE_CACHE){IBC_grass <- readRDS(paste0(tmp_dir,"/PCA/Grass3_PCAcoord.Rda")) %>%
+	       select(Rep, Ninitial, SpeciesID, Year, Stage, Productivity, Biomass, PC1score, PC2score, PC3score) %>%
+	       mutate(PC2score = -PC2score) %>%
+	       mutate(PC3score = -PC3score) %>%
+	       mutate(id = row_number()) %>%
+	       mutate_if(is.character, as.factor)
+               write.csv(IBC_grass, file_name, row.names=FALSE)
+}else{IBC_grass <- read_csv(file_name)}
 
 lab1 <- "LES1" #"PC1score associated with LMR \n (leaf to mass ratio)"
 lab2 <- "Size/Growth" #"PC2score associated with Gmax \n (maximum resource utilization) \n and MaxMass (Plant's maximum size)"
@@ -68,11 +72,11 @@ G3C3 <- fx_traits_vs_biomass_jitter("G3C3",IBC_grass,32,meta,"PC2score","PC1scor
 #G3C4 <- fx_traits_vs_biomass_jitter("G3C4",IBC_grass,32,iso,"PC3score","PC1score",lab3,lab1)
 
 #### Forest1 (PPA)
-#PPA <- fx_read_model("readPPA.R","Forest1")
 
 file_name <- paste0(store_dir,"PPA.csv")
-#write.csv(PPA, file_name, row.names=FALSE)
-PPA <- read_csv(file_name)
+if(SAVE_CACHE){PPA <- fx_read_model("readPPA.R","Forest1")
+               write.csv(PPA, file_name, row.names=FALSE)
+}else{PPA <- read_csv(file_name)}
 
 lab1 <- "GrowthSurvival" #"paceOfLife" #"PC1score (associated \n with fast-slow lifecycle)"#plant height)"
 lab2 <- "MaxHeight" #"PC2score (associated \n with tree stature)"# LMA -leaf mass per area)"
@@ -88,19 +92,16 @@ F1C3_P <- fx_traits_vs_biomass_jitter("F1C3_P",PPA,32,meta,"PC2score","PC1score"
 #F1C4_P <- fx_traits_vs_biomass_jitter("F1C4_P",PPA,32,iso,"PC2score","PC1score",lab2,lab1)
 
 ### Forest2 (TROLL) h_realmax
-#troll <- readRDS(paste0(tmp_dir,"/PCA/Forest2_hrm_PCAcoord.Rda"))
 
 file_name <- paste0(store_dir,"troll.csv")
-#write.csv(troll, file_name, row.names=FALSE)
-troll <- read_csv(file_name) %>%
-	select(c(Rep, Ninitial, SpeciesID, Year, Stage, Productivity, Biomass, PC1score, PC2score, PC3score)) %>%
-	mutate(PC1score = -PC1score) %>%
-	mutate(PC3score = -PC3score) %>%
-	mutate(id = row_number()) %>%
-	mutate_if(is.character, as.factor) #%>%
-#	mutate(Biomass = scales::rescale(Biomass, to = c(0, 100))) %>%
-#	mutate(Productivity = scales::rescale(Productivity, to = c(0, 100)))
-
+if(SAVE_CACHE){troll <- readRDS(paste0(tmp_dir,"/PCA/Forest2_hrm_PCAcoord.Rda")) %>%
+	       select(c(Rep, Ninitial, SpeciesID, Year, Stage, Productivity, Biomass, PC1score, PC2score, PC3score)) %>%
+	       mutate(PC1score = -PC1score) %>%
+	       mutate(PC3score = -PC3score) %>%
+	       mutate(id = row_number()) %>%
+	       mutate_if(is.character, as.factor)
+               write.csv(troll, file_name, row.names=FALSE)
+}else{troll <- read_csv(file_name)}
 lab1 <- "LES2" #"PC1score associated with \n LMA, nmass, and pmass"
 lab2 <- "MaxHeight" #"PC2score associated with \n h_realmax = hmax * dmax / (dmax + ah)"
 lab3 <- "woodDensity" #"PC3score associated with \n wsg (wood specific gravity)"
@@ -124,13 +125,13 @@ F2C3_P <- fx_traits_vs_biomass_jitter("F2C3_hrm_P",troll,32,meta,"PC2score","PC1
 #r2C4_P <- fx_traits_vs_biomass_jitter("F2C4_hrm_P",troll,32,iso,"PC2score","PC1score",lab2,lab1)
 
 #### Dryland (Bjoern)
-#bjoern <- fx_read_model("readBjoern.R","bjoern") %>%
-#	select(-pRoot)
 
 file_name <- paste0(store_dir,"bjoern.csv")
-#write.csv(bjoern, file_name, row.names=FALSE)
-bjoern <- read_csv(file_name) %>%
-	mutate(maxSize = log(maxSize))
+if(SAVE_CACHE){bjoern <- fx_read_model("readBjoern.R","bjoern") %>%
+	       select(-pRoot) %>%
+	       mutate(maxSize = log(maxSize))
+               write.csv(bjoern, file_name, row.names=FALSE)
+}else{bjoern <- read_csv(file_name)}
 
 lab1 <- "log maxBiomass" #(maximum \n size/size at maturity) [gC]"
 lab2 <- "leafAllocation" #"pLeaf (allocation \n to leaf) [gC/gC]"
@@ -178,7 +179,7 @@ DC3_P <- readPNG(paste0(path,"DC3_P.png"))
 png(paste0(path, "all_scatter_plots_biomass.png"), 
     width = 1663, height = 3061, units = "px", pointsize = 40,  res = NA,
     bg = "white", type = c("cairo", "cairo-png", "Xlib", "quartz"))
-par(mar=c(0,0,1,0))
+par(mar=c(0,0,2,0))
 all_scatter <- plot(NA, xlim = c(0, 2), ylim = c(-0.15, 6), type = "n", 
 		    xaxt = "n", yaxt = "n", xlab = "", ylab = "",
                     main = "Monoculture                                   Mixture")
@@ -198,7 +199,7 @@ rasterImage(F2C1, 0, 1, 1, 2)
 rasterImage(F2C3, 1, 1, 2, 2)
 rasterImage(DC1, 0, 0, 1, 1)
 rasterImage(DC3, 1, 0, 2, 1)
-rasterImage(legend, 1, -0.15, 2, -.06)
+rasterImage(legend, 0.75, -0.15, 1.25, -.06)
 while (!is.null(dev.list()))  dev.off()
 
 path <- paste0(tmp_dir,"/traits_vs_biomass/")

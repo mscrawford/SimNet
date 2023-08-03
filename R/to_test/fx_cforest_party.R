@@ -17,7 +17,7 @@ blue <- "#377eb8ff"
 purple <- "#984ea3ff"
 
 fx_cforest_single_condition <- function(modelName,model,NoSpp,stage){
-# Function to perform random forest analysis in a single condition (e.g. Mixture-Metacommuity)
+# Function to perform random forest analysis in a single condition (e.g. Mixture-Metacommunity)
 	# Prepare data before cforest analysis
 	is_productivity = grepl("_P$",modelName)
 	#print("Single cond")
