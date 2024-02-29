@@ -57,7 +57,7 @@ fx_traits_vs_biomass_jitter <- function(plotName,df,NoSpp,stage,trait1,trait2,xl
 	df <- df %>%
 	filter(Ninitial == NoSpp,
 	       Year %in% stage) %>%
-	select(-Rep,-Ninitial,-Year,-Stage)
+	select(all_of(-Rep,-Ninitial,-Year,-Stage))
 	df <- aggregate(. ~ SpeciesID, data = df, mean) #Calculate mean response per specie
 
 	df.32 <- df %>%
@@ -134,7 +134,7 @@ fx_traits_vs_biomass_jitter_I <- function(plotName,df,NoSpp,stage,trait1,trait2,
 	df <- df %>%
 	filter(Ninitial == NoSpp,
 	       Year %in% stage) %>%
-	select(-Rep,-Ninitial,-Year,-Stage,-id)
+	select(all_of(-Rep,-Ninitial,-Year,-Stage,-id))
 	df <- aggregate(. ~ SpeciesID, data = df, mean) #Calculate mean response per specie
 
 	df.32 <- df %>%
@@ -144,7 +144,7 @@ fx_traits_vs_biomass_jitter_I <- function(plotName,df,NoSpp,stage,trait1,trait2,
 	#mutate(Productivity = scales::rescale(Productivity, to = c(0, 100))) %>%
 	filter(Productivity > 0) %>%
 	mutate(Productivity = log(Productivity)) %>%
-	select(response,trait1,trait2)
+	select(all_of(response,trait1,trait2))
 
 print(head(df.32))
         dfmelt <- melt(df.32, id.vars = trait1, variable.name = 'Traits', value.name = response)
@@ -215,19 +215,21 @@ print(head(dfmelt))
 fx_prepare_df  <- function(modelName,data,trait1,trait2,lab1,lab2){
 	dfmono <- data %>%
 	filter(Ninitial == 1, Year %in% meta) %>%
-	select(SpeciesID, Biomass, trait1, trait2) %>%
-	setnames(old=c(trait1,trait2,"Biomass"), new=c(lab1,lab2,"Biomass_mono"))
+	select(SpeciesID, Biomass, trait1, trait2)
+    dfmono$type_bm <- rep("Monoculture",times=dim(dfmono)[1])
+
 	dfmix <- data %>%
 	filter(Ninitial == 32, Year %in% meta) %>%
-	select(SpeciesID, Biomass)
-	dfmix <- aggregate(dfmix$Biomass, list(dfmix$SpeciesID), mean, simplify = TRUE) #Calculate mean biomass per specie
-	setnames(dfmix, old=c("Group.1", "x"), new=c("SpeciesID","Biomass_mix"))
+	select(SpeciesID, Biomass, trait1, trait2) #%>%
+	dfmix <- aggregate(. ~ SpeciesID, data = dfmix, mean) #Calculate mean response per specie
+	dfmix$type_bm <- rep("Mixture",times=dim(dfmix)[1])
 
-	df <- inner_join(dfmono,dfmix) 
+	df <- rbind(dfmono,dfmix)  %>%
+	setnames(old=c(trait1,trait2), new=c(lab1,lab2))
+
 	df$Model <- rep(modelName,times=dim(df)[1])
 #        df <- reshape2::melt(df, id="SpeciesID")
-	print("#######     No melt      #############")
-	print(df)
+#	print("#######     No melt      #############")
 	return(df)
 }
 #"Monoculture \n Biomass""Mixture \n Biomass"
@@ -353,47 +355,24 @@ print(df.32)
 #	  stat_smooth(color="red", method="loess") +
 #    plot_vars
 #
-fx_single_plot_mono  <- function(df,lab,plot_name){
-print(df$Model[1])
-	df.32 <- df %>%
-	#mutate(Biomass = scales::rescale(Biomass, to = c(0, 100))) %>%
-	filter(Biomass_mono > 0) %>%
-	mutate(Biomass_mono = log(Biomass_mix))
-  p <- ggplot() +
-	  geom_point(data = df.32, 
-		     aes(x = .data[[lab]],
-			 y = Biomass_mono,
-			 )) +
-	  stat_smooth(aes(df.32[[lab]],df.32$Biomass_mono), fullrange = TRUE, color="red", method="loess") +
-    labs(#size = "Log mean biomass", color = "Log mean biomass",
-      y = "log biomass") +
-    ggtitle(df$Model[1]) + 
-    theme_bw() +
-    theme_classic() +
-    theme(aspect.ratio = 0.5,text = element_text(size = 30),
-    plot.title=element_text(hjust=0.5, vjust=0.5), legend.position = c(0.8, 0.57), 
-    legend.text = element_text(size=20), legend.title = element_text(size=20)) +
-    guides(alpha="none", size="none")
-  path <- paste0(tmp_dir,"/traits_vs_biomass/")
-  ggsave(filename = paste0(plot_name,".png"), path = path, plot = p
-         ,height = (13.5), width = (22), units = "cm")
-	return(p)
-}
 
-fx_single_plot_mix  <- function(df,lab,plot_name){
-	df.32 <- df %>%
+fx_scatter_plot <- function(condition,df,lab,plot_name){
+    df <- if(condition == "mono"){df[df$type_bm=="Monoculture",]} else {df[df$type_bm=="Mixture",]}
+    df.32 <- df %>%
 	#mutate(Biomass = scales::rescale(Biomass, to = c(0, 100))) %>%
-	filter(Biomass_mix > 0) %>%
-	mutate(Biomass_mix = log(Biomass_mix))
-	df.032 <- df %>%
-	filter(Biomass_mix == 0) 
+        filter(Biomass > 0) %>%
+        mutate(Biomass = log(Biomass))
+	#df.032 <- df %>%
+	#filter(Biomass == 0) 
+	#print(head(df.32$Model))
   p <- ggplot() +
 	  geom_point(data = df.32, 
 		     aes(x = .data[[lab]],
-			 y = Biomass_mix,
-			 )) +
-	  stat_smooth(aes(df.32[[lab]],df.32$Biomass_mix), fullrange = TRUE, color="red", method="loess") +
-    geom_point(data = df.032, shape = 4, aes(x = .data[[lab]], y = Biomass_mix)) +
+			 y = Biomass,
+			 )) + {
+	  if (df$Model[1] != "Dryland") stat_smooth(aes(df.32[[lab]],df.32$Biomass), fullrange = TRUE, color="red", method="loess", se=FALSE)
+          } +
+    #geom_point(data = df.032, shape = 4, aes(x = .data[[lab]], y = Biomass)) +
     labs(#size = "Log mean biomass", color = "Log mean biomass",
       y = "log biomass") +
     ggtitle(df$Model[1]) + 

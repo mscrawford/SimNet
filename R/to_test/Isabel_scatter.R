@@ -11,10 +11,10 @@ store_dir         <- paste0(tmp_dir,"/traits_vs_biomass/")
 source(paste0(scripts_dir, "/to_test/fx_traits_vs_biomass.R"))
 source(paste0(scripts_dir, "/to_test/fx_cforest_party.R"))
 
-#READ_CACHE <- FALSE
-#SAVE_CACHE <- TRUE
-READ_CACHE <- TRUE 
-SAVE_CACHE <- FALSE
+#READ_CACHE <- TRUE 
+#SAVE_CACHE <- FALSE
+READ_CACHE <- FALSE
+SAVE_CACHE <- TRUE 
 
 ### Grass1 (Adam's model)
 file_name <- paste0(store_dir,"adam.csv")
@@ -27,10 +27,10 @@ lab1 <- "monoBiomass" #"no3i (nitrogen R*)"
 lab2 <- "NUE1" #"r_pNi (reciprocal of \n aboveground N concentration)"
 
 d1 <- fx_prepare_df("Grass 1",adam,"abmi","r_pNi",lab1,lab2) 
-fx_single_plot_mono(d1,lab1,"G1C1") 
-fx_single_plot_mix(d1,lab1,"G1C2") 
-fx_single_plot_mono(d1,lab2,"G1C3") 
-fx_single_plot_mix(d1,lab2,"G1C4") 
+fx_scatter_plot("mono",d1,lab1,"G1C1") 
+fx_scatter_plot("mix",d1,lab1,"G1C2") 
+fx_scatter_plot("mono",d1,lab2,"G1C3") 
+fx_scatter_plot("mix",d1,lab2,"G1C4") 
 
 ### Grass2 (Lindsay's model)
 
@@ -45,10 +45,10 @@ lab1 <- "rootingVolume" #"Vi (volume of soil \n accessible to species i)"
 lab2 <- "NUE2" #thetai (Nitrogen uptake \n rate per unit plant biomass)"
 
 d2 <- fx_prepare_df("Grass 2",lindsay,"Vi","thetai",lab1,lab2)
-fx_single_plot_mono(d2,lab1,"G2C1") 
-fx_single_plot_mix(d2,lab1,"G2C2") 
-fx_single_plot_mono(d2,lab2,"G2C3") 
-fx_single_plot_mix(d2,lab2,"G2C4") 
+fx_scatter_plot("mono",d2,lab1,"G2C1") 
+fx_scatter_plot("mix",d2,lab1,"G2C2") 
+fx_scatter_plot("mono",d2,lab2,"G2C3") 
+fx_scatter_plot("mix",d2,lab2,"G2C4") 
 
 ### Grass3 (IBC-grass)
 
@@ -67,10 +67,10 @@ lab2 <- "Size/Growth" #"PC2score associated with Gmax \n (maximum resource utili
 lab3 <- "Spacing" #"PC3score associated with SLA and MeanSpacerLength"
 
 d3 <- fx_prepare_df("Grass 3",IBC_grass,"PC2score","PC1score",lab2,lab1)
-fx_single_plot_mono(d3,lab1,"G3C1") 
-fx_single_plot_mix(d3,lab1,"G3C2") 
-fx_single_plot_mono(d3,lab2,"G3C3") 
-fx_single_plot_mix(d3,lab2,"G3C4") 
+fx_scatter_plot("mono",d3,lab1,"G3C1") 
+fx_scatter_plot("mix",d3,lab1,"G3C2") 
+fx_scatter_plot("mono",d3,lab2,"G3C3") 
+fx_scatter_plot("mix",d3,lab2,"G3C4") 
 
 #### Forest1 (PPA)
 
@@ -83,10 +83,10 @@ lab1 <- "GrowthSurvival" #"paceOfLife" #"PC1score (associated \n with fast-slow 
 lab2 <- "MaxHeight" #"PC2score (associated \n with tree stature)"# LMA -leaf mass per area)"
 
 d4 <- fx_prepare_df("Forest 1",PPA,"PC2score","PC1score",lab2,lab1)
-fx_single_plot_mono(d4,lab1,"F1C1") 
-fx_single_plot_mix(d4,lab1,"F1C2") 
-fx_single_plot_mono(d4,lab2,"F1C3") 
-fx_single_plot_mix(d4,lab2,"F1C4") 
+fx_scatter_plot("mono",d4,lab1,"F1C1") 
+fx_scatter_plot("mix",d4,lab1,"F1C2") 
+fx_scatter_plot("mono",d4,lab2,"F1C3") 
+fx_scatter_plot("mix",d4,lab2,"F1C4") 
 
 ### Forest2 (TROLL) h_realmax
 
@@ -104,30 +104,30 @@ lab2 <- "MaxHeight" #"PC2score associated with \n h_realmax = hmax * dmax / (dma
 lab3 <- "woodDensity" #"PC3score associated with \n wsg (wood specific gravity)"
 
 d5 <- fx_prepare_df("Forest 2",troll,"PC2score","PC1score",lab2,lab1)
-fx_single_plot_mono(d5,lab1,"F2C1") 
-fx_single_plot_mix(d5,lab1,"F2C2") 
-fx_single_plot_mono(d5,lab2,"F2C3") 
-fx_single_plot_mix(d5,lab2,"F2C4") 
+fx_scatter_plot("mono",d5,lab1,"F2C1") 
+fx_scatter_plot("mix",d5,lab1,"F2C2") 
+fx_scatter_plot("mono",d5,lab2,"F2C3") 
+fx_scatter_plot("mix",d5,lab2,"F2C4") 
 
-##### Dryland (Bjoern)
-#
-#file_name <- paste0(store_dir,"bjoern.csv")
-#if(SAVE_CACHE){bjoern <- fx_read_model("readBjoern.R","bjoern") %>%
-#	       select(-pRoot) %>%
-#	       mutate(maxSize = log(maxSize))
-#               write.csv(bjoern, file_name, row.names=FALSE)
-#}else{bjoern <- read_csv(file_name)}
-#
-#lab1 <- "log maxBiomass" #(maximum \n size/size at maturity) [gC]"
-#lab2 <- "leafAllocation" #"pLeaf (allocation \n to leaf) [gC/gC]"
-#lab3 <- "storageAllocation" #"pStorage (allocation \n to storage) [gC/gC]"
-#lab4 <- "rootsAllocation" #"pRoot (allocation \n to root) [gC/gC]"
-#
-#d6 <- fx_prepare_df("Dryland",bjoern,"maxSize","pLeaf",lab1,lab2)
-#fx_single_plot_mono(d6,lab1,"DC1") 
-#fx_single_plot_mix(d6,lab1,"DC2") 
-#fx_single_plot_mono(d6,lab2,"DC3") 
-#fx_single_plot_mix(d6,lab2,"DC4") 
+### Dryland (Bjoern)
+
+file_name <- paste0(store_dir,"bjoern.csv")
+if(SAVE_CACHE){bjoern <- fx_read_model("readBjoern.R","bjoern") %>%
+	       select(-pRoot) %>%
+	       mutate(maxSize = log(maxSize))
+               write.csv(bjoern, file_name, row.names=FALSE)
+}else{bjoern <- read_csv(file_name)}
+
+lab1 <- "log maxBiomass" #(maximum \n size/size at maturity) [gC]"
+lab2 <- "leafAllocation" #"pLeaf (allocation \n to leaf) [gC/gC]"
+lab3 <- "storageAllocation" #"pStorage (allocation \n to storage) [gC/gC]"
+lab4 <- "rootsAllocation" #"pRoot (allocation \n to root) [gC/gC]"
+
+d6 <- fx_prepare_df("Dryland",bjoern,"maxSize","pLeaf",lab1,lab2)
+fx_scatter_plot("mono",d6,lab1,"DC1") 
+fx_scatter_plot("mix",d6,lab1,"DC2") 
+fx_scatter_plot("mono",d6,lab2,"DC3") 
+fx_scatter_plot("mix",d6,lab2,"DC4") 
 
 #########################################################################################
 #########################################################################################
@@ -139,42 +139,42 @@ fx_single_plot_mix(d5,lab2,"F2C4")
 #plot <- fx_biomass_vs_traits(all_d)
 
 #### Compile figure 3 in the manuscript: group all plots: 
-path <- paste0(tmp_dir,"/traits_vs_biomass/")
-G1C1 <- readPNG(paste0(path,"G1C1.png"))
-G1C2 <- readPNG(paste0(path,"G1C2.png"))
-G1C3 <- readPNG(paste0(path,"G1C3.png"))
-G1C4 <- readPNG(paste0(path,"G1C4.png"))
-G2C1 <- readPNG(paste0(path,"G2C1.png"))
-G2C3 <- readPNG(paste0(path,"G2C3.png"))
-G3C1 <- readPNG(paste0(path,"G3C1.png"))
-G3C3 <- readPNG(paste0(path,"G3C3.png"))
-F1C1 <- readPNG(paste0(path,"F1C1.png"))
-F1C3 <- readPNG(paste0(path,"F1C3.png"))
-F2C1 <- readPNG(paste0(path,"F2C1.png"))
-F2C3 <- readPNG(paste0(path,"F2C3.png"))
-G2C2 <- readPNG(paste0(path,"G2C2.png"))
-G2C4 <- readPNG(paste0(path,"G2C4.png"))
-G3C2 <- readPNG(paste0(path,"G3C2.png"))
-G3C4 <- readPNG(paste0(path,"G3C4.png"))
-F1C2 <- readPNG(paste0(path,"F1C2.png"))
-F1C4 <- readPNG(paste0(path,"F1C4.png"))
-F2C2 <- readPNG(paste0(path,"F2C2.png"))
-F2C4 <- readPNG(paste0(path,"F2C4.png"))
-#F2C1 <- readPNG(paste0(path,"F2C1_hrm.png"))
-#F2C3 <- readPNG(paste0(path,"F2C3_hrm.png"))
-DC1 <- readPNG(paste0(path,"DC1.png"))
-DC3 <- readPNG(paste0(path,"DC3.png"))
-DC2 <- readPNG(paste0(path,"DC2.png"))
-DC4 <- readPNG(paste0(path,"DC4.png"))
-#F1C1_P <- readPNG(paste0(path,"F1C1_P.png"))
-#F1C3_P <- readPNG(paste0(path,"F1C3_P.png"))
-#F2C1_P <- readPNG(paste0(path,"F2C1_hrm_P.png"))
-#F2C3_P <- readPNG(paste0(path,"F2C3_hrm_P.png"))
-#DC1_P <- readPNG(paste0(path,"DC1_P.png"))
-#DC3_P <- readPNG(paste0(path,"DC3_P.png"))
+dir <- paste0(tmp_dir,"/traits_vs_biomass/")
+G1C1 <- readPNG(paste0(dir,"G1C1.png"))
+G1C2 <- readPNG(paste0(dir,"G1C2.png"))
+G1C3 <- readPNG(paste0(dir,"G1C3.png"))
+G1C4 <- readPNG(paste0(dir,"G1C4.png"))
+G2C1 <- readPNG(paste0(dir,"G2C1.png"))
+G2C3 <- readPNG(paste0(dir,"G2C3.png"))
+G3C1 <- readPNG(paste0(dir,"G3C1.png"))
+G3C3 <- readPNG(paste0(dir,"G3C3.png"))
+F1C1 <- readPNG(paste0(dir,"F1C1.png"))
+F1C3 <- readPNG(paste0(dir,"F1C3.png"))
+F2C1 <- readPNG(paste0(dir,"F2C1.png"))
+F2C3 <- readPNG(paste0(dir,"F2C3.png"))
+G2C2 <- readPNG(paste0(dir,"G2C2.png"))
+G2C4 <- readPNG(paste0(dir,"G2C4.png"))
+G3C2 <- readPNG(paste0(dir,"G3C2.png"))
+G3C4 <- readPNG(paste0(dir,"G3C4.png"))
+F1C2 <- readPNG(paste0(dir,"F1C2.png"))
+F1C4 <- readPNG(paste0(dir,"F1C4.png"))
+F2C2 <- readPNG(paste0(dir,"F2C2.png"))
+F2C4 <- readPNG(paste0(dir,"F2C4.png"))
+#F2C1 <- readPNG(paste0(dir,"F2C1_hrm.png"))
+#F2C3 <- readPNG(paste0(dir,"F2C3_hrm.png"))
+DC1 <- readPNG(paste0(dir,"DC1.png"))
+DC3 <- readPNG(paste0(dir,"DC3.png"))
+DC2 <- readPNG(paste0(dir,"DC2.png"))
+DC4 <- readPNG(paste0(dir,"DC4.png"))
+#F1C1_P <- readPNG(paste0(dir,"F1C1_P.png"))
+#F1C3_P <- readPNG(paste0(dir,"F1C3_P.png"))
+#F2C1_P <- readPNG(paste0(dir,"F2C1_hrm_P.png"))
+#F2C3_P <- readPNG(paste0(dir,"F2C3_hrm_P.png"))
+#DC1_P <- readPNG(paste0(dir,"DC1_P.png"))
+#DC3_P <- readPNG(paste0(dir,"DC3_P.png"))
 
-#png(paste0(path, "all_scatter_plots_biomass.png"), 
-png(paste0(path, "all_scatter_plots.png"), 
+#png(paste0(dir, "all_scatter_plots_biomass.png"), 
+png(paste0(dir, "all_scatter_plots.png"), 
     #width = 1663, height = 3061, units = "px", pointsize = 40,  res = NA,
     width = 3326, height = 3061, units = "px", pointsize = 40,  res = NA,
     bg = "white", type = c("cairo", "cairo-png", "Xlib", "quartz"))
