@@ -7,6 +7,7 @@ base_dir          <- setwd("../")
 val_dir          <- paste0(base_dir, "/Validation_BEFexperiments/")
 scripts_dir       <- paste0(base_dir, "/R/to_test/")
 tmp_dir           <- paste0(val_dir, "tmp/")
+cache_dir           <- paste0(tmp_dir, "cache/")
 raw_data_dir      <- paste0(val_dir, "data/")
 
 source(paste0(scripts_dir, "fx_cforest_party.R"))
@@ -140,20 +141,20 @@ while (!is.null(dev.list()))  dev.off()
 
 #print("##############################   cforest Monoculture    ##########################")
 #cforest_mono <- fx_cforest_data_sets(bigbio.mono,"Monoculture")
-#write.csv(cforest_mono, paste0(tmp_dir,"cache/cforest_Jena_Fons_mono.csv"), row.names=FALSE)
+#write.csv(cforest_mono, paste0(cache_dir,"cforest_Jena_Fons_mono.csv"), row.names=FALSE)
 #
 #print("##############################   cforest Mix    ##########################")
 #cforest_mix <- fx_cforest_data_sets(bigbio.mix,"Mixture")
-#write.csv(cforest_mix, paste0(tmp_dir,"cache/cforest_Jena_Fons_mix.csv"), row.names=FALSE)
+#write.csv(cforest_mix, paste0(cache_dir,"cforest_Jena_Fons_mix.csv"), row.names=FALSE)
 #
 print("##############################   cforest Monoculture    ##########################")
 cforest_mono <- fx_cforest_data_sets(df_mono,"Monoculture")
-write.csv(cforest_mono, paste0(tmp_dir,"cache/cforest_Jena_Fons_mono_2t.csv"), row.names=FALSE)
+write.csv(cforest_mono, paste0(cache_dir,"cforest_Jena_Fons_mono_2t.csv"), row.names=FALSE)
 
 #print("##############################   cforest Monoculture    ##########################")
 #cforest_mono <- fx_cforest_data_sets(bigbio.mono,"Monoculture")
-#write.csv(cforest_mono, paste0(tmp_dir,"cache/cforest_Jena_Fons_mono_2t.csv"), row.names=FALSE)
+#write.csv(cforest_mono, paste0(cache_dir,"cforest_Jena_Fons_mono_2t.csv"), row.names=FALSE)
 #
 #print("##############################   cforest Mix    ##########################")
 #cforest_mix <- fx_cforest_data_sets(bigbio.mix,"Mixture")
-#write.csv(cforest_mix, paste0(tmp_dir,"cache/cforest_Jena_Fons_mix_2t.csv"), row.names=FALSE)
+#write.csv(cforest_mix, paste0(cache_dir,"cforest_Jena_Fons_mix_2t.csv"), row.names=FALSE)
