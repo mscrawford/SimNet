@@ -190,16 +190,16 @@ while (!is.null(dev.list()))  dev.off()
 ## Area_of_leaf_blade_cm2
 #
 #cforest_mono <- fx_cforest_data_sets(CedarSmall,"Monoculture")
-#write.csv(cforest_mono, paste0(cache_dir,"cforest_mono.csv"), row.names=FALSE)
+#write.csv(cforest_mono, paste0(cache_dir,"cforest_cedar_mono.csv"), row.names=FALSE)
 #
 #cforest_mix <- fx_cforest_data_sets(CedarSmall,"Mixture")
-#write.csv(cforest_mix, paste0(cache_dir,"cforest_mix.csv"), row.names=FALSE)
+#write.csv(cforest_mix, paste0(cache_dir,"cforest_cedar_mix.csv"), row.names=FALSE)
 #
 CedarSmall<-CedarSmall%>%
 select(id, Plot, Year, Species, NumSp, species_biomass_m2, leafN, height_.m.)
 
 cforest_2t_mono <- fx_cforest_data_sets(CedarSmall,"Monoculture")
-write.csv(cforest_2t_mono, paste0(cache_dir,"cforest_2t_mono.csv"), row.names=FALSE)
+write.csv(cforest_2t_mono, paste0(cache_dir,"cforest_cedar_2t_mono.csv"), row.names=FALSE)
 
 cforest_2t_mix <- fx_cforest_data_sets(CedarSmall,"Mixture")
-write.csv(cforest_2t_mix, paste0(cache_dir,"cforest_2t_mix.csv"), row.names=FALSE)
+write.csv(cforest_2t_mix, paste0(cache_dir,"cforest_cedar_2t_mix.csv"), row.names=FALSE)

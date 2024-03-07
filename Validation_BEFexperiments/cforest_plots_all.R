@@ -17,35 +17,35 @@ val_dir          <- paste0(base_dir, "/Validation_BEFexperiments/")
 tmp_dir           <- paste0(val_dir, "tmp/")
 cache_dir           <- paste0(tmp_dir, "cache/")
 
-jena_mono <-read.csv(paste0(cache_dir,"cforest_Jena_mono.csv"), sep=",")
-jena_mix <-read.csv(paste0(cache_dir,"cforest_Jena_mix.csv"), sep=",")
-jena_Fons_mix <-read.csv(paste0(cache_dir,"cforest_Jena_Fons_mix.csv"), sep=",")
+#jena_mono <-read.csv(paste0(cache_dir,"cforest_Jena_mono.csv"), sep=",")
+#jena_mix <-read.csv(paste0(cache_dir,"cforest_Jena_mix.csv"), sep=",")
+#jena_Fons_mix <-read.csv(paste0(cache_dir,"cforest_Jena_Fons_mix.csv"), sep=",")
 jena_Fons_mix_2t <-read.csv(paste0(cache_dir,"cforest_Jena_Fons_mix_2t.csv"), sep=",")
 jena_Fons_mono_2t <-read.csv(paste0(cache_dir,"cforest_Jena_Fons_mono_2t.csv"), sep=",")
-jena_dom_mono <-read.csv(paste0(cache_dir,"cforest_Jena_Dom_mono.csv"), sep=",")
-jena_dom_mix <-read.csv(paste0(cache_dir,"cforest_Jena_Dom_mix.csv"), sep=",")
-cedar_mono <-read.csv(paste0(cache_dir,"cforest_mono.csv"), sep=",")
-cedar_mix <-read.csv(paste0(cache_dir,"cforest_mix.csv"), sep=",")
-cedar_2t_mono <-read.csv(paste0(cache_dir,"cforest_2t_mono.csv"), sep=",")
-cedar_2t_mix <-read.csv(paste0(cache_dir,"cforest_2t_mix.csv"), sep=",")
+#jena_dom_mono <-read.csv(paste0(cache_dir,"cforest_Jena_Dom_mono.csv"), sep=",")
+#jena_dom_mix <-read.csv(paste0(cache_dir,"cforest_Jena_Dom_mix.csv"), sep=",")
+#cedar_mono <-read.csv(paste0(cache_dir,"cforest_mono.csv"), sep=",")
+#cedar_mix <-read.csv(paste0(cache_dir,"cforest_mix.csv"), sep=",")
+cedar_2t_mono <-read.csv(paste0(cache_dir,"cforest_cedar_2t_mono.csv"), sep=",")
+cedar_2t_mix <-read.csv(paste0(cache_dir,"cforest_cedar_2t_mix.csv"), sep=",")
 
-jena_mix$mName <- rep("Jena",times=dim(jena_mix)[1])
-jena_Fons_mix$mName <- rep("Jena_Fons",times=dim(jena_Fons_mix)[1])
+#jena_mix$mName <- rep("Jena",times=dim(jena_mix)[1])
+#jena_Fons_mix$mName <- rep("Jena_Fons",times=dim(jena_Fons_mix)[1])
 jena_Fons_mix_2t$mName <- rep("Jena_Fons_2t",times=dim(jena_Fons_mix_2t)[1])
 jena_Fons_mono_2t$mName <- rep("Jena_Fons_2t",times=dim(jena_Fons_mono_2t)[1])
-jena_dom_mix$mName <- rep("Jena_dom",times=dim(jena_dom_mix)[1])
-cedar_mono$mName <- rep("Cedar",times=dim(cedar_mono)[1])
-cedar_mix$mName <- rep("Cedar",times=dim(cedar_mono)[1])
+#jena_dom_mix$mName <- rep("Jena_dom",times=dim(jena_dom_mix)[1])
+#cedar_mono$mName <- rep("Cedar",times=dim(cedar_mono)[1])
+#cedar_mix$mName <- rep("Cedar",times=dim(cedar_mono)[1])
 cedar_2t_mono$mName <- rep("Cedar_2t",times=dim(cedar_2t_mono)[1])
 cedar_2t_mix$mName <- rep("Cedar_2t",times=dim(cedar_2t_mono)[1])
 
 #all_d <- rbind(jena_Fons_mix)
 #all_d <- rbind(jena_Fons_mix_2t, jena_mix, jena_Fons_mix)
-all_d <- rbind(jena_Fons_mix_2t, jena_Fons_mono_2t)
+#all_d <- rbind(jena_Fons_mix_2t, jena_Fons_mono_2t)
 #all_d <- rbind(cedar_2t_mono, cedar_2t_mix, cedar_mono, cedar_mix)
-#all_d <- rbind(cedar_2t_mono, cedar_2t_mix, jena_Fons_mix_2t, jena_mix, jena_Fons_mix)
+all_d <- rbind(cedar_2t_mono, cedar_2t_mix, jena_Fons_mix_2t, jena_Fons_mono_2t)
 #all_d <- rbind(jena_mix, jena_Fons_mix, jena_dom_mix, cedar_mono, cedar_mix)
-print(head(all_d))
+#print(head(all_d))
 resvar = "Biomass"
 fx_plot_all <- function(df,resvar,plot_name){	
 # Function to plot the random forest results for all four conditions (for all models)
@@ -85,6 +85,6 @@ fx_plot_all <- function(df,resvar,plot_name){
 	return(p)
 }
 
-plot_name <- "cforest_grid_JenaFons"
-#plot_name <- "cforest_grid_experiments"
+#plot_name <- "cforest_grid_JenaFons"
+plot_name <- "cforest_grid_experiments"
 fx_plot_all(all_d,resvar,plot_name)
