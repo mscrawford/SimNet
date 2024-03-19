@@ -24,6 +24,7 @@ raw_data_dir      <- paste0(val_dir, "data/")
 
 source(paste0(scripts_dir, "fx_traits_vs_biomass.R"))
 source(paste0(scripts_dir, "fx_cforest_party.R"))
+source(paste0(val_dir, "functions.R"))
 #~/Documents/FacilitationInBEF-main/Code/Wright et al. - MonoMix - Data Cleaning-6.7.2022.Rmd
 
 td <- read.delim(paste0(raw_data_dir,"e120_Plant aboveground biomass carbon and nitrogen.txt"))
@@ -103,35 +104,9 @@ bigbio.mix<-CedarSmall[CedarSmall$NumSp>1,]
 ############################### Traits vs. Biomass ##########################################
 #############################################################################################
 print("##############################    Scatter    ##########################")
-bigbio.mono %>%
-    gather(-Species, -Plot, -id, -Year, -NumSp, -species_biomass_m2, key= "var", value = "value") %>%
-    ggplot(aes(x=value, y=log(species_biomass_m2))) +
-    geom_point() +
-    labs(y = "log biomass") +
-	stat_smooth(fullrange = TRUE, color="red", method="loess", se=FALSE) +
-    facet_wrap(~var, scales ="free") +
-    theme_bw() +
-    theme(strip.text = element_text(size=25))
-
-ggsave(file=paste0(tmp_dir,"ScatterCedar_mono.png")
-       , width=18, height=14, dpi=300
-)
-while (!is.null(dev.list()))  dev.off()
-
-bigbio.mix %>%
-    gather(-Species, -Plot, -id, -Year, -NumSp, -species_biomass_m2, key= "var", value = "value") %>%
-    ggplot(aes(x=value, y=log(species_biomass_m2))) +
-    geom_point() +
-    labs(y = "log biomass") +
-	stat_smooth(fullrange = TRUE, color="red", method="loess", se=FALSE) +
-    facet_wrap(~var, scales ="free") +
-    theme_bw() +
-    theme(strip.text = element_text(size=25))
-
-ggsave(file=paste0(tmp_dir,"ScatterCedar_mix.png")
-       , width=18, height=14, dpi=300
-)
-while (!is.null(dev.list()))  dev.off()
+fx_plot_trait_Vs_biomass(bigbio.mono, "ScatterCedar_mono.png")
+fx_plot_trait_Vs_biomass(bigbio.mix, "ScatterCedar_mix.png")
+prin()
 
 ### mean biomass
 #df <- bigbio.mono %>% 
@@ -197,6 +172,8 @@ while (!is.null(dev.list()))  dev.off()
 #
 CedarSmall<-CedarSmall%>%
 select(id, Plot, Year, Species, NumSp, species_biomass_m2, leafN, height_.m.)
+print(unique(CedarSmall$Year))
+prin()
 
 cforest_2t_mono <- fx_cforest_data_sets(CedarSmall,"Monoculture")
 write.csv(cforest_2t_mono, paste0(cache_dir,"cforest_cedar_2t_mono.csv"), row.names=FALSE)

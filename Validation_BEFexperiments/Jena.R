@@ -11,6 +11,7 @@ cache_dir           <- paste0(tmp_dir, "cache/")
 raw_data_dir      <- paste0(val_dir, "data/")
 
 source(paste0(scripts_dir, "fx_cforest_party.R"))
+source(paste0(val_dir, "functions.R"))
 
 BigBio<-read.csv(paste0(raw_data_dir,"JenaTBE-BarryWeigelt.et.al.csv"), sep=",")
 BigBio <- BigBio %>%
@@ -99,41 +100,16 @@ print("##############################    Monoculture    ########################
 #print(unique(bigbio.mono$Species))
 print(head(bigbio.mono))
 
+print(unique(BigBio$Year))
 bigbio.mix <- BigBio[BigBio$NumSp>1,]
 print("##############################    Mix    ##########################")
 print(summary(bigbio.mix))
 
 print("##############################    Scatter    ##########################")
-print(head(bigbio.mono))
-bigbio.mono %>%
-    gather(-Species, -Plot, -id, -Year, -NumSp, -species_biomass_m2, key= "var", value = "value") %>%
-    ggplot(aes(x=value, y=log(species_biomass_m2))) +
-    geom_point() +
-    labs(y = "log biomass") +
-	stat_smooth(fullrange = TRUE, color="red", method="loess", se=FALSE) +
-    facet_wrap(~var, scales ="free") +
-    theme_bw() +
-    theme(strip.text = element_text(size=9))
 
-ggsave(file=paste0(tmp_dir,"ScatterJenaFons_mono.png")
-       , width=18, height=14, dpi=300
-)
-while (!is.null(dev.list()))  dev.off()
-
-bigbio.mix %>%
-    gather(-Species, -Plot, -id, -Year, -NumSp, -species_biomass_m2, key= "var", value = "value") %>%
-    ggplot(aes(x=value, y=log(species_biomass_m2))) +
-    geom_point() +
-    labs(y = "log biomass") +
-	stat_smooth(fullrange = TRUE, color="red", method="loess", se=FALSE) +
-    facet_wrap(~var, scales ="free") +
-    theme_bw() +
-    theme(strip.text = element_text(size=9))
-
-ggsave(file=paste0(tmp_dir,"ScatterJenaFons_mix.png")
-       , width=18, height=14, dpi=300
-)
-while (!is.null(dev.list()))  dev.off()
+fx_plot_trait_Vs_biomass(bigbio.mono, "ScatterJenaFons_mono.png")
+fx_plot_trait_Vs_biomass(bigbio.mix, "ScatterJenaFons_mix.png")
+prin()
 
 ###########################################
 ############### cforest ###################
