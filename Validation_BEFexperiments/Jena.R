@@ -1,6 +1,6 @@
 library(tidyverse)
-library(party)
 library(stringr)
+library(dplyr)
 
 set.seed(1987)
 base_dir          <- setwd("../")
@@ -10,7 +10,6 @@ tmp_dir           <- paste0(val_dir, "tmp/")
 cache_dir           <- paste0(tmp_dir, "cache/")
 raw_data_dir      <- paste0(val_dir, "data/")
 
-source(paste0(scripts_dir, "fx_cforest_party.R"))
 source(paste0(val_dir, "functions.R"))
 
 BigBio<-read.csv(paste0(raw_data_dir,"JenaTBE-BarryWeigelt.et.al.csv"), sep=",")
@@ -21,7 +20,7 @@ BigBio <- BigBio %>%
 BigBio <- BigBio[BigBio$Above.Below=="Aboveground",] #%>% 
 print("##############################    orig    ##########################")
 #print(summary(BigBio))
-#print(head(BigBio))
+print(head(BigBio))
 #print(unique(BigBio$Species))
 
 dataset_502_18 <- read.csv(paste0(raw_data_dir,"502_18_data.csv"), sep=",") %>%
@@ -40,7 +39,7 @@ print(unique(mono_bm$full_name))
 species.traits <- read.csv(paste0(raw_data_dir,"traits.st.csv"), sep=",") %>%
     mutate(sp = recode(sp, "Cen.jac" = "Centaurea jacea", "Pla.lan" = "Plantago lanceolata", "Poa.pra" = "Poa pratensis", "Ave.pub" = "Avenula pubescens", "Phl.pra" = "Phleum pratensis", "Dac.glo" = "Dactylis glomerata", "Ran.acr" = "Ranunculus acris", "Ant.odo" = "Anthoxanthum odoratum", "Leu.vul" = "Leucanthemum vulgare", "Ger.pra" = "Geranium pratensis", "Hol.lan" = "Holcus lanatus", "Kna.arv" = "Knautia arvensis", "Fes.rub" = "Festuca rubra", "Rum.ace" = "Rumex acetosa","Tri.fra" = "Trifolium fragiferum", "Ono.vic" = "Onobrychis viciifolia", "Tar.off" = "Taraxacum officinale", "Dau.car" = "Daucus carota", "Ran.rep" = "Ranunculus repens", "Ver.cha" = "Veronica chamaedrys", "Tri.pra" = "Trifolium pratense", "San.off" = "Sanguisorba officinalis", "Leo.his" = "Leontodon hispidus", "Med.lup" = "Medicago lupulina", "Gle.hed" = "Glechoma hederacea", "Bel.per" = "Bellis perennis", "Alo.pra" = "Alopecurus pratensis", "Med.var" = "Medicago x varia", "Pla.med" = "Plantago media", "Cre.bie" = "Crepis biennis", "Arr.ela" = "Arrhenatherum elatius", "Gal.mol" = "Galium mollugo")) %>%
     select(sp, leafN, RNU, cond, RootingDepth_Target)
-    #select(sp, la, sd, k.rad, rtd, rbm, LCN, leafN, leafC, RootingDepth_Target)
+#select(sp, la, sd, k.rad, rtd, rbm, LCN, leafN, leafC, RootingDepth_Target)
 # "Ach.mil" "Aju.rep" "" "Ant.syl" ""
 # "Bro.ere" "Bro.hor" "Cam.pat" "Car.car" "Car.pra" ""
 # "Cir.ole" "Cyn.cri" "" "Fes.pra" ""
@@ -59,6 +58,14 @@ BigBio<-BigBio%>%
   select(Plot, Year, Species, sown_species, Biomass.g.m2)
 print(unique(BigBio$Species))
 
+#BigBio_mean<-BigBio %>%
+#  filter(Species %in% species.traits$sp) %>%
+#  group_by(Year, Species, sown_species, Biomass.g.m2) %>%
+#  summarise(sp_biomass=mean(Biomass..g.m2.)) %>%
+#  ungroup()
+
+print(unique(BigBio$Species))
+
 print("##############################    traits    ##########################")
 ### Monocultures ###
 df_mono <- merge(mono_bm,species.traits, by.x="full_name", by.y="sp")
@@ -69,11 +76,24 @@ print("df_mono + traits")
 print(head(df_mono))
 #print(unique(df_mono$full_name))
 
+#Remove NA
+BigBio <- na.omit(BigBio)
+
+dim(species.traits)
+log_traits <- species.traits %>%
+    mutate(log_leafN = log(leafN))
+#There was 1 warning in `mutate()`.
+#ℹ In argument: `log_leafN = log(leafN)`.
+#Caused by warning in `log()`:
+#! NaNs produced
+dim(log_traits )
+
 BigBio <- merge(BigBio,species.traits, by.x="Species", by.y="sp")
+#print(head(BigBio))
+
 #print(str(BigBio))
 BigBio<-BigBio[BigBio$sown_species>0,]
 BigBio$Biomass.g.m2<-as.numeric(BigBio$Biomass.g.m2)
-#print(head(BigBio))
 #print(summary(BigBio))
 
 #BigBio$NumSp <- BigBio$sown.species.richness
@@ -92,8 +112,6 @@ BigBio<-BigBio %>%
 # Add an 'id' column to facilitate cforest analysis
 BigBio$id <- seq_along(BigBio[,1])
 df_mono$id <- seq_along(df_mono[,1])
-#Remove NA
-BigBio <- na.omit(BigBio)
 
 bigbio.mono <- BigBio[BigBio$NumSp==1,]
 print("##############################    Monoculture    ##########################")
@@ -102,6 +120,7 @@ print(head(bigbio.mono))
 
 print(unique(BigBio$Year))
 bigbio.mix <- BigBio[BigBio$NumSp>1,]
+bigbio.mix <- na.omit(bigbio.mix)
 print("##############################    Mix    ##########################")
 print(summary(bigbio.mix))
 
@@ -109,7 +128,6 @@ print("##############################    Scatter    ##########################")
 
 fx_plot_trait_Vs_biomass(bigbio.mono, "ScatterJenaFons_mono.png")
 fx_plot_trait_Vs_biomass(bigbio.mix, "ScatterJenaFons_mix.png")
-prin()
 
 ###########################################
 ############### cforest ###################

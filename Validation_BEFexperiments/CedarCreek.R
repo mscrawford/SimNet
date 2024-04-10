@@ -8,11 +8,9 @@
 ##eml <- read_eml("knb-lter-cdr.270.122.xml", from="xml")
 #eml <- read_eml("knb-lter-cdr.414.122.xml", from="xml")
 ##print(head(eml))library(tidyverse)
-#
-library(party)
-library(png)
+# :vsp ~/Documents/FacilitationInBEF-main/Code/Wright et al. - MonoMix - Data Cleaning-6.7.2022.Rmd
 library(readr)
-library(tidyr)
+library(dplyr)
 
 set.seed(1987)
 base_dir          <- setwd("../")
@@ -22,8 +20,6 @@ tmp_dir           <- paste0(val_dir, "tmp/")
 cache_dir           <- paste0(tmp_dir, "cache/")
 raw_data_dir      <- paste0(val_dir, "data/")
 
-source(paste0(scripts_dir, "fx_traits_vs_biomass.R"))
-source(paste0(scripts_dir, "fx_cforest_party.R"))
 source(paste0(val_dir, "functions.R"))
 #~/Documents/FacilitationInBEF-main/Code/Wright et al. - MonoMix - Data Cleaning-6.7.2022.Rmd
 
@@ -43,47 +39,101 @@ td_N <- td_mono[td_mono$count == 1,] %>%
 #print(unique(td_N$Species))
 #print(td_N)
 
+species<-read.csv(paste0(raw_data_dir,"CDRLTERe120PlantedSpecies.csv"), sep=",")
+target_spp <- unique(species$Species)
+print(target_spp)
 BigBio<-read.csv(paste0(raw_data_dir,"CedarCreek-BigBio.csv"), sep=";")
-#print(dim(BigBio))
 #print(str(BigBio))
 #print(summary(BigBio))
 species.names<-read.csv(paste0(raw_data_dir,"BigBio-SpeciesNames.csv"), sep=";")
+print(species.names)
 species.traits<-read.csv(paste0(raw_data_dir,"CedarCreek_traits.csv"), sep=",")
-#print(species.traits)
+#print(dim(species.traits))
 species.traits<-species.traits %>%
 	select(-Year)
+
 BigBio<-BigBio[BigBio$NumSp>0,]
 BigBio$Biomass..g.m2.<-as.numeric(BigBio$Biomass..g.m2.)
 BigBioSpMatrix<-BigBio[,c(4,18:35)]
 BigBioSpMatrix<-BigBioSpMatrix[!duplicated(BigBioSpMatrix$Plot),]
-BigBio<-BigBio %>%
-  group_by(Year, Plot, Species, NumSp)%>%
-  summarise(species_biomass_m2=mean(Biomass..g.m2.))%>%
-  ungroup()
-
-BigBio<-merge(BigBio, BigBioSpMatrix, by="Plot")
-#print(head(BigBio))
-#print(summary(BigBio))
 
 BigBio$Species<-if_else(BigBio$Species=="Achillea millefolium(lanulosa)", "Achillea millefolium", BigBio$Species)
 
 BigBio<-BigBio%>%
-  filter(Species %in% species.names$Species.names) %>%
-  mutate(bm = species_biomass_m2) %>%
-  mutate(species_biomass_m2 = bm * NumSp) %>%
-  select(Plot, Year, Species, NumSp, species_biomass_m2)
-print("##############################    orig    ##########################")
-#print(str(BigBio))
+  filter(Species %in% species.names$Species.names)
+print("############# head")
+print(head(BigBio))
 
-BigBio <- merge(BigBio,species.traits, by.x="Species", by.y="Species")
-BigBio <- merge(BigBio,td_N, by.x="Species", by.y="Species")
-#print(head(BigBio))
-#### remove trees from data set
-CedarSmall <- BigBio[BigBio$height_.m. < 3,]
+BigBio<-BigBio %>%
+  group_by(Year, Plot, Species, NumSp) %>%
+  summarise(bm = mean(Biomass..g.m2.)) %>%
+  ungroup()
+
+print(head(BigBio))
+#prin()
+
+BigBio<-merge(BigBio, BigBioSpMatrix, by="Plot")
+
+BigBio<-BigBio%>%
+  arrange(Species)%>%
+  pivot_wider(names_from=Species, values_from=bm)
+
+BigBio<-BigBio%>%
+  select(-c("Petalostemum candidum","Petalostemum villosum", "Solidago rigida"))
+BigBio<-as.data.frame(BigBio)
+for(i in 22:39){
+  BigBio[,i]<-if_else(BigBio[,i-18]==1&is.na(BigBio[,i]),0,BigBio[,i])
+  BigBio[,i]<-ifelse(BigBio[,i-18]==0 & is.na(BigBio[,i]) == FALSE,NA,BigBio[,i])
+}
+
+BigBio<-BigBio%>%
+  select(-c(Achmi:Sornu))%>%
+  pivot_longer(cols=c(4:21), names_to="Species", values_to="bm")
+
+count.table<-aggregate(data = BigBio,                # Applying aggregate
+                          Species ~ Plot,
+                          function(Species) length(unique(Species)))
+
+######### find plots with woody species, to remove them
+#woody<-BigBio[grep("Quercus",BigBio$Species),]
+#wp <- unique(woody$Plot)
+#BigBio <- BigBio %>%
+#    filter(!(Plot %in% wp))
+#########
+
+######### Remove oak trees
+non_woody<-BigBio[-grep("Quercus ellipsoidalis|Quercus macrocarpa",BigBio$Species),]
+CedarSmall <- non_woody %>%
+#    mutate(NumSp = as.numeric(NumSp)) %>%
+#    group_by(Plot, Species, NumSp) %>%
+#    summarise(mbm = mean(bm)) %>%
+    mutate(species_biomass_m2 = bm * NumSp) %>%
+    select(-bm)
+    #select(Year, Species, NumSp, species_biomass_m2)
+#    ungroup()
+print("                 after gb")
+CedarSmall<-na.omit(CedarSmall)
 print(head(CedarSmall))
+
+CedarSmall <- merge(CedarSmall,species.traits, by.x="Species", by.y="Species")
+CedarSmall<-na.omit(CedarSmall)
+print(summary(CedarSmall))
+CedarSmall <- merge(CedarSmall,td_N, by.x="Species", by.y="Species") %>%
+    mutate(Log_P_A.L = log(P_A.L)) %>%
+    mutate(Log_P.A = log(P.A)) %>%
+    mutate(Log_Seed_weight_.g. = log(Seed_weight_.g.)) %>%
+    #mutate(species_biomass_m2 = log(species_biomass_m2)) %>%
+    select(-c(P_A.L,P.A,Seed_weight_.g.))
+print(summary(CedarSmall))
+#print(head(CedarSmall))
+print(dim(CedarSmall))
+
+#CedarSmall <- BigBio[BigBio$height_.m. < 3,] #Check that there are no trees in dataframe
+#print(dim(CedarSmall))
 
 # Add an 'id' column to facilitate cforest analysis
 CedarSmall$id <- seq_along(CedarSmall[,1])
+#CedarSmall$Plot <- seq_along(CedarSmall[,1])
 
 #print("##############################    Merged    ##########################")
 #print(str(CedarSmall))
@@ -164,19 +214,19 @@ prin()
 ## height_.m.
 ## Area_of_leaf_blade_cm2
 #
-#cforest_mono <- fx_cforest_data_sets(CedarSmall,"Monoculture")
-#write.csv(cforest_mono, paste0(cache_dir,"cforest_cedar_mono.csv"), row.names=FALSE)
-#
-#cforest_mix <- fx_cforest_data_sets(CedarSmall,"Mixture")
-#write.csv(cforest_mix, paste0(cache_dir,"cforest_cedar_mix.csv"), row.names=FALSE)
-#
-CedarSmall<-CedarSmall%>%
-select(id, Plot, Year, Species, NumSp, species_biomass_m2, leafN, height_.m.)
-print(unique(CedarSmall$Year))
+cforest_mono <- fx_cforest_data_sets(CedarSmall,"Monoculture")
+write.csv(cforest_mono, paste0(cache_dir,"cforest_cedar_mono_mean.csv"), row.names=FALSE)
 prin()
 
+cforest_mix <- fx_cforest_data_sets(CedarSmall,"Mixture")
+write.csv(cforest_mix, paste0(cache_dir,"cforest_cedar_mix_mean.csv"), row.names=FALSE)
+
+CedarSmall<-CedarSmall%>%
+select(id, Year, Species, NumSp, species_biomass_m2, leafN, height_.m.)
+#select(id, Plot, Year, Species, NumSp, species_biomass_m2, leafN, height_.m.)
+
 cforest_2t_mono <- fx_cforest_data_sets(CedarSmall,"Monoculture")
-write.csv(cforest_2t_mono, paste0(cache_dir,"cforest_cedar_2t_mono.csv"), row.names=FALSE)
+write.csv(cforest_2t_mono, paste0(cache_dir,"cforest_cedar_2t_mono_mean.csv"), row.names=FALSE)
 
 cforest_2t_mix <- fx_cforest_data_sets(CedarSmall,"Mixture")
-write.csv(cforest_2t_mix, paste0(cache_dir,"cforest_cedar_2t_mix.csv"), row.names=FALSE)
+write.csv(cforest_2t_mix, paste0(cache_dir,"cforest_cedar_2t_mix_mean.csv"), row.names=FALSE)

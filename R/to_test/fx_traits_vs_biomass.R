@@ -369,9 +369,9 @@ fx_scatter_plot <- function(condition,df,lab,plot_name){
 	  geom_point(data = df.32, 
 		     aes(x = .data[[lab]],
 			 y = Biomass,
-			 )) + {
-	  if (df$Model[1] != "Dryland") stat_smooth(aes(df.32[[lab]],df.32$Biomass), fullrange = TRUE, color="red", method="loess", se=FALSE)
-          } +
+			 )) + #{
+#	  if (df$Model[1] != "Dryland") stat_smooth(aes(df.32[[lab]],df.32$Biomass), fullrange = TRUE, color="red", method="loess", se=FALSE)
+#          } +
     #geom_point(data = df.032, shape = 4, aes(x = .data[[lab]], y = Biomass)) +
     labs(#size = "Log mean biomass", color = "Log mean biomass",
       y = "log biomass") +

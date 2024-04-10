@@ -16,21 +16,21 @@ source(paste0(scripts_dir, "/to_test/fx_cforest_party.R"))
 READ_CACHE <- FALSE
 SAVE_CACHE <- TRUE 
 
-### Grass1 (Adam's model)
-file_name <- paste0(store_dir,"adam.csv")
-if(SAVE_CACHE){adam <- fx_read_model("readAdam.R", "Grass1") %>%
-	       mutate(r_pNi = 1/pNi) #rpNi = reciprocal of pNi
-               write.csv(adam, file_name, row.names=FALSE)
-}else{adam <- read_csv(file_name)}
-
-lab1 <- "monoBiomass" #"no3i (nitrogen R*)"
-lab2 <- "NUE1" #"r_pNi (reciprocal of \n aboveground N concentration)"
-
-d1 <- fx_prepare_df("Grass 1",adam,"abmi","r_pNi",lab1,lab2) 
-fx_scatter_plot("mono",d1,lab1,"G1C1") 
-fx_scatter_plot("mix",d1,lab1,"G1C2") 
-fx_scatter_plot("mono",d1,lab2,"G1C3") 
-fx_scatter_plot("mix",d1,lab2,"G1C4") 
+#### Grass1 (Adam's model)
+#file_name <- paste0(store_dir,"adam.csv")
+#if(SAVE_CACHE){adam <- fx_read_model("readAdam.R", "Grass1") %>%
+#	       mutate(r_pNi = 1/pNi) #rpNi = reciprocal of pNi
+#               write.csv(adam, file_name, row.names=FALSE)
+#}else{adam <- read_csv(file_name)}
+#
+#lab1 <- "monoBiomass" #"no3i (nitrogen R*)"
+#lab2 <- "NUE1" #"r_pNi (reciprocal of \n aboveground N concentration)"
+#
+#d1 <- fx_prepare_df("Grass 1",adam,"abmi","r_pNi",lab1,lab2) 
+#fx_scatter_plot("mono",d1,lab1,"G1C1") 
+#fx_scatter_plot("mix",d1,lab1,"G1C2") 
+#fx_scatter_plot("mono",d1,lab2,"G1C3") 
+#fx_scatter_plot("mix",d1,lab2,"G1C4") 
 
 ### Grass2 (Lindsay's model)
 
@@ -45,11 +45,11 @@ lab1 <- "rootingVolume" #"Vi (volume of soil \n accessible to species i)"
 lab2 <- "NUE2" #thetai (Nitrogen uptake \n rate per unit plant biomass)"
 
 d2 <- fx_prepare_df("Grass 2",lindsay,"Vi","thetai",lab1,lab2)
-fx_scatter_plot("mono",d2,lab1,"G2C1") 
-fx_scatter_plot("mix",d2,lab1,"G2C2") 
-fx_scatter_plot("mono",d2,lab2,"G2C3") 
-fx_scatter_plot("mix",d2,lab2,"G2C4") 
-
+fx_scatter_plot("mono",d2,lab1,"G2C1_noloess") 
+fx_scatter_plot("mix",d2,lab1,"G2C2_noloess") 
+fx_scatter_plot("mono",d2,lab2,"G2C3_noloess") 
+fx_scatter_plot("mix",d2,lab2,"G2C4_noloess") 
+prin()
 ### Grass3 (IBC-grass)
 
 file_name <- paste0(store_dir,"IBC_grass.csv")
