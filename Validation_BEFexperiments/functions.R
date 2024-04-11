@@ -8,7 +8,8 @@ fx_plot_trait_Vs_biomass <- function(df, plot_name){
 df$Year <- as.character(df$Year)
 df$log_bm <- log(df$species_biomass_m2)
     df %>%
-        gather(-Species, -Plot, -Year, -id, -NumSp, -species_biomass_m2,-log_bm, key= "var", value = "value") %>%
+        gather(-Species, -Year, -id, -NumSp, -species_biomass_m2,-log_bm, key= "var", value = "value") %>%
+        #gather(-Species, -Plot, -Year, -id, -NumSp, -species_biomass_m2,-log_bm, key= "var", value = "value") %>%
         ggplot(aes(x=value, y=log_bm, color=Year, shape=Year)) +
         geom_point() +
         labs(y = "log biomass") +
@@ -30,7 +31,8 @@ sizeT <- c("height_.m.", "shoot.height", "RootingDepth_Target", "Height", "HEIGH
 print(typeof(model))
 	model <- model %>%
             filter(if(NoSpp=="Monoculture"){NumSp == 1}else{NumSp > 1}) %>%
-            select(-one_of("Species", "Plot", "Year", "NumSp"))
+            select(-one_of("Species", "Year", "NumSp"))
+            #select(-one_of("Species", "Plot", "Year", "NumSp"))
 print("Model cforest")
 print(head(model))
         

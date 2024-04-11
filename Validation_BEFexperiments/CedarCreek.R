@@ -103,21 +103,17 @@ count.table<-aggregate(data = BigBio,                # Applying aggregate
 
 ######### Remove oak trees
 non_woody<-BigBio[-grep("Quercus ellipsoidalis|Quercus macrocarpa",BigBio$Species),]
+
 CedarSmall <- non_woody %>%
-#    mutate(NumSp = as.numeric(NumSp)) %>%
-#    group_by(Plot, Species, NumSp) %>%
-#    summarise(mbm = mean(bm)) %>%
-    mutate(species_biomass_m2 = bm * NumSp) %>%
-    select(-bm)
-    #select(Year, Species, NumSp, species_biomass_m2)
-#    ungroup()
-print("                 after gb")
+    group_by(Year, Species, NumSp) %>%
+    summarise(species_biomass_m2 = mean((bm * NumSp), na.rm=TRUE)) %>%
+    ungroup()
 CedarSmall<-na.omit(CedarSmall)
-print(head(CedarSmall))
+print("&&&&&&&& non_woody &&&&&&&&")
+print(summary(CedarSmall))
+print("&&&&&&&&&&&&&&&&")
 
 CedarSmall <- merge(CedarSmall,species.traits, by.x="Species", by.y="Species")
-CedarSmall<-na.omit(CedarSmall)
-print(summary(CedarSmall))
 CedarSmall <- merge(CedarSmall,td_N, by.x="Species", by.y="Species") %>%
     mutate(Log_P_A.L = log(P_A.L)) %>%
     mutate(Log_P.A = log(P.A)) %>%
@@ -131,7 +127,7 @@ print(dim(CedarSmall))
 #CedarSmall <- BigBio[BigBio$height_.m. < 3,] #Check that there are no trees in dataframe
 #print(dim(CedarSmall))
 
-# Add an 'id' column to facilitate cforest analysis
+# Add an ')id' column to facilitate cforest analysis
 CedarSmall$id <- seq_along(CedarSmall[,1])
 #CedarSmall$Plot <- seq_along(CedarSmall[,1])
 
@@ -156,44 +152,6 @@ bigbio.mix<-CedarSmall[CedarSmall$NumSp>1,]
 print("##############################    Scatter    ##########################")
 fx_plot_trait_Vs_biomass(bigbio.mono, "ScatterCedar_mono.png")
 fx_plot_trait_Vs_biomass(bigbio.mix, "ScatterCedar_mix.png")
-prin()
-
-### mean biomass
-#df <- bigbio.mono %>% 
-#    group_by(Species) %>%
-#    summarise(Biomass_mono = mean(species_biomass_m2), leafC = mean(leafC), leafN = mean(leafN),    Area_of_leaf_blade_cm2 = mean(Area_of_leaf_blade_cm2), P.A = mean(P.A), P_A.L = mean(P_A.L), SLA_cm2.g = mean(SLA_cm2.g), Seed_weight_.g. = mean(Seed_weight_.g.), height_.m. = mean(height_.m.))
-#print(head(df))
-#
-#Area_of_leaf_blade_cm2
-#P.A
-#P_A.L
-#SLA_cm2.g
-#Seed_weight_.g.
-#height_.m.
-#leafC
-#leafN
-
-#df_mix <- bigbio.mix %>% 
-#    group_by(Species) %>%
-#    summarise(Biomass_mix = mean(species_biomass_m2), leafC = mean(leafC), leafN = mean(leafN),    Area_of_leaf_blade_cm2 = mean(Area_of_leaf_blade_cm2), P.A = mean(P.A), P_A.L = mean(P_A.L), SLA_cm2.g = mean(SLA_cm2.g), Seed_weight_.g. = mean(Seed_weight_.g.), height_.m. = mean(height_.m.))
-#print(head(df_mix))
-
-##df <- aggregate(df$species_biomass_m2, list(df$Species), mean, simplify = TRUE) #Calculate mean biomass per specie
-##print(head(df))
-##setnames(df, old=c("Group.1", "x"), new=c("Species","Biomass_mono"))
-#df_t_mono$Biomass_mono <- df_t_mono$species_biomass_m2
-#df_t_mix$Biomass_mix <- df_t_mix$species_biomass_m2
-#png(paste0(dir, "Scatter_Cedar_meanBM.png"), 
-#    #width = 1663, height = 3061, units = "px", pointsize = 40,  res = NA,
-#    width = 3326, height = 3061, units = "px", pointsize = 40,  res = NA,
-#    bg = "white", type = c("cairo", "cairo-png", "Xlib", "quartz"))
-#par(mar=c(0,0,2,0))
-#png(paste0(dir, "Scatter_Cedar_BM.png"), 
-#    #width = 1663, height = 3061, units = "px", pointsize = 40,  res = NA,
-#    width = 3326, height = 3061, units = "px", pointsize = 40,  res = NA,
-#    bg = "white", type = c("cairo", "cairo-png", "Xlib", "quartz"))
-#par(mar=c(0,0,2,0))
-
 ############################################
 #print("################ cforest ###################")
 ############################################
@@ -216,7 +174,6 @@ prin()
 #
 cforest_mono <- fx_cforest_data_sets(CedarSmall,"Monoculture")
 write.csv(cforest_mono, paste0(cache_dir,"cforest_cedar_mono_mean.csv"), row.names=FALSE)
-prin()
 
 cforest_mix <- fx_cforest_data_sets(CedarSmall,"Mixture")
 write.csv(cforest_mix, paste0(cache_dir,"cforest_cedar_mix_mean.csv"), row.names=FALSE)
