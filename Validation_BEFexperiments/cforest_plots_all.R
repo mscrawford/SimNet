@@ -92,7 +92,8 @@ fx_plot_all <- function(df,resvar,plot_name){
 			      values = c("Resource related" = red,
 					  "Size related" = blue,
 					  "Mixed" = purple),
-			      labels = c("Mixed","Resource", "Size")) +
+			      labels = c("Resource", "Size")) +
+			      #labels = c("Mixed","Resource", "Size")) +
 	    scale_y_continuous(limits = c(0, 1), breaks = seq(0, 1, by = 0.5)) + 
 	    facet_grid(condition ~ mName, scales = "free_x") +
 	    #facet_grid(reorder(condition,modeln) ~ reorder(mNameFDC, -if(resvar=="Biomass"){funcdom}else{funcdom_p}), scales = "free_x") +
