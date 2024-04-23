@@ -26,6 +26,10 @@ jena_Fons_mono_2t <-read.csv(paste0(cache_dir,"cforest_Jena_Fons_mono_2t.csv"), 
 #jena_dom_mix <-read.csv(paste0(cache_dir,"cforest_Jena_Dom_mix.csv"), sep=",")
 cedar_mono <-read.csv(paste0(cache_dir,"cforest_cedar_mono.csv"), sep=",")
 cedar_mix <-read.csv(paste0(cache_dir,"cforest_cedar_mix.csv"), sep=",")
+cedar_2007mono <-read.csv(paste0(cache_dir,"cforest_cedar_mono_2007.csv"), sep=",")
+cedar_2007mix <-read.csv(paste0(cache_dir,"cforest_cedar_mix_2007.csv"), sep=",")
+cedar_2t_mono_2007 <-read.csv(paste0(cache_dir,"cforest_cedar_2t_mono_2007"), sep=",")
+cedar_2t_mix_2007 <-read.csv(paste0(cache_dir,"cforest_cedar_2t_mix_2007"), sep=",")
 cedar_2t_mono <-read.csv(paste0(cache_dir,"cforest_cedar_2t_mono.csv"), sep=",")
 cedar_2t_mix <-read.csv(paste0(cache_dir,"cforest_cedar_2t_mix.csv"), sep=",")
 cedar_mono_mean <-read.csv(paste0(cache_dir,"cforest_cedar_mono_mean.csv"), sep=",")
@@ -54,8 +58,12 @@ cedar_mono_mean$mName <- rep("Cedar_mean",times=dim(cedar_mono_mean)[1])
 cedar_mix_mean$mName <- rep("Cedar_mean",times=dim(cedar_mono_mean)[1])
 cedar_2t_mono_mean$mName <- rep("Cedar_2t_mean",times=dim(cedar_2t_mono_mean)[1])
 cedar_2t_mix_mean$mName <- rep("Cedar_2t_mean",times=dim(cedar_2t_mix_mean)[1])
+cedar_2t_mono_2007$mName <- rep("Cedar 2007 2t",times=dim(cedar_2t_mono_2007)[1])
+cedar_2t_mix_2007$mName <- rep("Cedar 2007 2t",times=dim(cedar_2t_mix_2007)[1])
 cedar_mono$mName <- rep("Cedar",times=dim(cedar_mono)[1])
 cedar_mix$mName <- rep("Cedar",times=dim(cedar_mono)[1])
+cedar_2007mono$mName <- rep("Cedar 2007",times=dim(cedar_2007mono)[1])
+cedar_2007mix$mName <- rep("Cedar 2007",times=dim(cedar_2007mono)[1])
 cedar_2t_mono$mName <- rep("Cedar_2t",times=dim(cedar_2t_mono)[1])
 cedar_2t_mix$mName <- rep("Cedar_2t",times=dim(cedar_2t_mix)[1])
 sardinilla_mono$mName <- rep("Sardinilla",times=dim(sardinilla_mono)[1])
@@ -75,6 +83,9 @@ resvar = "Biomass"
 fx_plot_all <- function(df,resvar,plot_name){	
 # Function to plot the random forest results for all four conditions (for all models)
 	# include function-dominance correlation in model name
+
+    categ <- c("Resource related" = red, "Size related" = blue, "Mixed" = purple)
+
 	df$mNameFDC <-  paste0(df$mName,'\n (',if(resvar=="Biomass"){df$funcdom}else{df$funcdom_p},')')
 	p <- ggplot(df, aes(x=varnames, y=sCPI, fill=type)) +
 	#p <- ggplot(df, aes(x=reorder(varnames,typen), y=sCPI, fill=type)) +
@@ -89,16 +100,15 @@ fx_plot_all <- function(df,resvar,plot_name){
 	    #ylab("Conditional permutation importance, \n scaled to correlation") +
 	    xlab("Traits") +
 	    scale_fill_manual(name = "Trait type",
-			      values = c("Resource related" = red,
-					  "Size related" = blue,
-					  "Mixed" = purple),
-			      labels = c("Resource", "Size")) +
+			      values = categ,
+			      #labels = c("Resource", "Size")) +
+			      ) +
 			      #labels = c("Mixed","Resource", "Size")) +
 	    scale_y_continuous(limits = c(0, 1), breaks = seq(0, 1, by = 0.5)) + 
-	    facet_grid(condition ~ mName, scales = "free_x") +
+	    facet_grid(factor(condition, levels = c("Monoculture","Mixture"))~ mName, scales = "free_x") +
 	    #facet_grid(reorder(condition,modeln) ~ reorder(mNameFDC, -if(resvar=="Biomass"){funcdom}else{funcdom_p}), scales = "free_x") +
 	    theme_bw() +
-	    theme(text = element_text(size = 26),legend.position = "bottom",
+	    theme(text = element_text(size = 24),legend.position = "bottom",
 	    axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1),
 	    panel.grid.minor = element_blank(),
 	    panel.grid.major = element_blank(),
@@ -116,7 +126,7 @@ all_d <- rbind(cedar_mono, cedar_mix, cedar_2t_mono, cedar_2t_mix, jena_Fons_mix
 plot_name <- "cforest_grid_experiments_"
 fx_plot_all(all_d,resvar,plot_name)
 
-cedars <- rbind(cedar_mono, cedar_mix, cedar_2t_mono, cedar_2t_mix, cedar_mono_mean, cedar_mix_mean, cedar_2t_mono_mean, cedar_2t_mix_mean)
+cedars <- rbind(cedar_mono, cedar_mix, cedar_2t_mono, cedar_2t_mix, cedar_mono_mean, cedar_mix_mean, cedar_2t_mono_mean, cedar_2t_mix_mean, cedar_2007mono, cedar_2007mix, cedar_2t_mono_2007, cedar_2t_mix_2007)
 plot_name <- "cforest_cedars"
 fx_plot_all(cedars,resvar,plot_name)
 

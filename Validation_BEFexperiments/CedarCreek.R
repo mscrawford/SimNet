@@ -114,24 +114,40 @@ print(summary(CedarSmall))
 print("&&&&&&&&&&&&&&&&")
 
 CedarSmall <- merge(CedarSmall,species.traits, by.x="Species", by.y="Species")
-CedarSmall <- merge(CedarSmall,td_N, by.x="Species", by.y="Species") %>%
+CedarSmall <- merge(CedarSmall,td_N, by.x="Species", by.y="Species")
+print(summary(CedarSmall))
+#print(head(CedarSmall))
+print(dim(CedarSmall))
+
+print("&&&&&&&& 2007 &&&&&&&&")
+cedar2007 <- non_woody %>%
+    group_by(Year, Plot, Species, NumSp) %>%
+    summarise(species_biomass_m2 = mean((bm * NumSp), na.rm=TRUE)) %>%
+    filter(Year == 2007) %>%
+    ungroup()
+cedar2007<-na.omit(cedar2007)
+
+cedar2007 <- merge(cedar2007,species.traits, by.x="Species", by.y="Species")
+cedar2007 <- merge(cedar2007,td_N, by.x="Species", by.y="Species")
+print(summary(cedar2007))
+#print(head(cedar2007))
+print(dim(cedar2007))
+
+#CedarSmall <- BigBio[BigBio$height_.m. < 3,] #Check that there are no trees in dataframe
+#print(dim(CedarSmall))
+# Add an ')id' column to facilitate cforest analysis
+CedarSmall$id <- seq_along(CedarSmall[,1])
+cedar2007$id <- seq_along(cedar2007[,1])
+#CedarSmall$Plot <- seq_along(CedarSmall[,1])
+
+#print("##############################    Merged    ##########################")
+
+CedarSmall_log <- CedarSmall %>% 
     mutate(Log_P_A.L = log(P_A.L)) %>%
     mutate(Log_P.A = log(P.A)) %>%
     mutate(Log_Seed_weight_.g. = log(Seed_weight_.g.)) %>%
     #mutate(species_biomass_m2 = log(species_biomass_m2)) %>%
     select(-c(P_A.L,P.A,Seed_weight_.g.))
-print(summary(CedarSmall))
-#print(head(CedarSmall))
-print(dim(CedarSmall))
-
-#CedarSmall <- BigBio[BigBio$height_.m. < 3,] #Check that there are no trees in dataframe
-#print(dim(CedarSmall))
-
-# Add an ')id' column to facilitate cforest analysis
-CedarSmall$id <- seq_along(CedarSmall[,1])
-#CedarSmall$Plot <- seq_along(CedarSmall[,1])
-
-#print("##############################    Merged    ##########################")
 #print(str(CedarSmall))
 
 #bigbio.mono<-CedarSmall[CedarSmall$Plot==151,] #%>% 
@@ -140,6 +156,19 @@ bigbio.mono<-CedarSmall[CedarSmall$NumSp==1,] #%>%
 bigbio.mix<-CedarSmall[CedarSmall$NumSp>1,]
 #bigbio.mix<-CedarSmall[CedarSmall$NumSp==16,]
 
+print("&&&&&&&& head 2007 &&&&&&&&")
+cedar2007log <- cedar2007 %>% 
+    mutate(Log_P_A.L = log(P_A.L)) %>%
+    mutate(Log_P.A = log(P.A)) %>%
+    mutate(Log_Seed_weight_.g. = log(Seed_weight_.g.)) %>%
+    #mutate(species_biomass_m2 = log(species_biomass_m2)) %>%
+    select(-c(P_A.L,P.A,Seed_weight_.g.))
+
+cedar_2007mono<-cedar2007log[cedar2007log$NumSp==1,] #%>% 
+print(unique(cedar_2007mono$Species))
+
+cedar_2007mix<-cedar2007log[cedar2007log$NumSp>1,]
+print(unique(cedar_2007mix$Species))
 #print("##############################    Monoculture    ##########################")
 #print(bigbio.mono)
 #print(str(bigbio.mono))
@@ -150,8 +179,10 @@ bigbio.mix<-CedarSmall[CedarSmall$NumSp>1,]
 ############################### Traits vs. Biomass ##########################################
 #############################################################################################
 print("##############################    Scatter    ##########################")
-fx_plot_trait_Vs_biomass(bigbio.mono, "ScatterCedar_mono.png")
-fx_plot_trait_Vs_biomass(bigbio.mix, "ScatterCedar_mix.png")
+#fx_plot_trait_Vs_biomass(bigbio.mono, "ScatterCedar_mono.png")
+#fx_plot_trait_Vs_biomass(bigbio.mix, "ScatterCedar_mix.png")
+fx_plot_trait_Vs_biomass(cedar_2007mono, "ScatterCedar2007_mono.png")
+fx_plot_trait_Vs_biomass(cedar_2007mix, "ScatterCedar2007_mix.png")
 ############################################
 #print("################ cforest ###################")
 ############################################
@@ -171,7 +202,26 @@ fx_plot_trait_Vs_biomass(bigbio.mix, "ScatterCedar_mix.png")
 ## P_A.L
 ## height_.m.
 ## Area_of_leaf_blade_cm2
-#
+
+cforest_mono <- fx_cforest_data_sets(cedar2007,"Monoculture")
+write.csv(cforest_mono, paste0(cache_dir,"cforest_cedar_mono_2007.csv"), row.names=FALSE)
+
+cforest_mix <- fx_cforest_data_sets(cedar2007,"Mixture")
+write.csv(cforest_mix, paste0(cache_dir,"cforest_cedar_mix_2007.csv"), row.names=FALSE)
+
+
+cedar2007_2t<-cedar2007%>%
+select(id, Year, Species, NumSp, species_biomass_m2, leafN, height_.m.)
+print("%%%%%%%%%%%%%%%%%%%%% data  (rf) %%%%%%%%%%%%%%%%%%%%%%%%%")
+print(summary(cedar2007_2t))
+
+cforest_2t_mono <- fx_cforest_data_sets(cedar2007_2t,"Monoculture")
+write.csv(cforest_2t_mono, paste0(cache_dir,"cforest_cedar_2t_mono_2007"), row.names=FALSE)
+
+cforest_2t_mix <- fx_cforest_data_sets(cedar2007_2t,"Mixture")
+write.csv(cforest_2t_mix, paste0(cache_dir,"cforest_cedar_2t_mix_2007"), row.names=FALSE)
+
+
 cforest_mono <- fx_cforest_data_sets(CedarSmall,"Monoculture")
 write.csv(cforest_mono, paste0(cache_dir,"cforest_cedar_mono_mean.csv"), row.names=FALSE)
 

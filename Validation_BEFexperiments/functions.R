@@ -31,8 +31,8 @@ sizeT <- c("height_.m.", "shoot.height", "RootingDepth_Target", "Height", "HEIGH
 print(typeof(model))
 	model <- model %>%
             filter(if(NoSpp=="Monoculture"){NumSp == 1}else{NumSp > 1}) %>%
-            select(-one_of("Species", "Year", "NumSp"))
-            #select(-one_of("Species", "Plot", "Year", "NumSp"))
+            #select(-one_of("Species", "Year", "NumSp"))
+            select(-one_of("Species", "Plot", "Year", "NumSp"))
 print("Model cforest")
 print(head(model))
         
@@ -43,13 +43,17 @@ print(head(model))
         
         train <- train %>% select(-id)
         test <- test %>% select(-id)
+        model <- model %>% select(-id)
         
         rf <- cforest(species_biomass_m2 ~ .,
-                      data = as.data.frame(train),
-		      control = cforest_unbiased(mtry = 2, ntree = 501))
-		      
-	print(rf)
-        pred <- data.frame(pred = predict(rf, newdata=test,OOB=TRUE))
+                      data = as.data.frame(model),
+                      #data = as.data.frame(train),
+		      control = cforest_unbiased(mtry = 1, ntree = 501))
+		      #control = cforest_unbiased(mtry = 2, ntree = 501))
+		     
+	print("%%%%%%%%%%%%%%%%%%%%% summary(rf) %%%%%%%%%%%%%%%%%%%%%%%%%")
+	summary(rf)
+        pred <- data.frame(pred = predict(rf, newdata=test, OOB=TRUE))
 	test_res = test$species_biomass_m2
 	corr <- cor(pred, test_res)[[1]] #, method = "kendall" #pearson (default)
 	var <- round((corr^2), 2) #, method = "kendall" #pearson (default)
@@ -72,6 +76,7 @@ print(head(model))
 	rf_df$condition <- rep(cond,times=dim(rf_df)[1])
 	rf_df <- rf_df %>% 
 		mutate(CPI = replace(CPI, which(CPI<0), NA) ) %>%
+		#mutate(sCPI = (CPI/sum(CPI,na.rm=TRUE)))
 		mutate(sCPI = (CPI*var/sum(CPI,na.rm=TRUE)))
 		#mutate(sCPI = (CPI*corr/sum(CPI,na.rm=TRUE)))
         print(rf_df)
