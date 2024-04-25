@@ -5,9 +5,9 @@ library(readr)
 library(data.table)
 library(tidyr)
 library(dplyr)
-library(ggforce)
-library(ggbreak)
-library(patchwork)
+#library(ggforce)
+#library(ggbreak)
+#library(patchwork)
 #library(cowplot)
 
 base_dir          <- setwd("../../")
@@ -16,8 +16,6 @@ tmp_dir           <- paste0(base_dir, "/tmp")
 raw_data_dir      <- paste0(base_dir, "/data/raw")
 store_dir         <- paste0(tmp_dir,"/traits_vs_biomass/")
 
-#source(paste0(scripts_dir, "/readModels.R"))
-#source(paste0(scripts_dir, "/to_test/fx_traits_vs_biomass.R"))
 source(paste0(scripts_dir, "/to_test/fx_cforest_party.R"))
 
 READ_CACHE <- TRUE 
@@ -145,62 +143,7 @@ lab4 <- "rootsAllocation" #"pRoot (allocation \n to root) [gC/gC]"
 d6 <- fx_prepare_df("Dryland",bjoern,"maxSize","pLeaf")
 D6 <- data.frame(var=c("Trait 1","Trait 2"), Lab = c(lab1,lab2))
 D6$Model <- rep("Dryland",times=2)
-##########################################################################################
-#print("##############################    Scatter    ##########################")
-##########################################################################################
-#
-#df <- rbind(d1,d2,d3,d4,d5,d6)
-#labels <- rbind(D1,D2,D3,D4,D5,D6)
-#
-#df$SpeciesID <- as.character(df$SpeciesID)
-#df$log_bm <- log(df$Biomass)
-#
-#df <- df %>%
-#    pivot_longer(c(-SpeciesID, -Biomass, -type_bm, -Model, -log_bm), names_to= "var", values_to = "value")
-#df <- merge(df,labels, by=c("Model","var"))
-#print(head(df))
-#
-## Subset to plot loess line for all models, except Dryland
-#df_noD <- df[df$Model != "Dryland",]
-#
-#plot_name <- "Figure3.png"
-#level1 <- c("Grass 1", "Forest 1", "Grass 2", "Grass 3", "Forest 2", "Dryland")
-#level2 <- c("Monoculture","Mixture")
-#p <- ggplot() +
-#    geom_point(data = df, aes(x=value, y=log_bm)) +
-#    #geom_smooth(method="lm", fill=NA) +
-#    stat_smooth(data = df_noD, aes(x=value, y=log_bm), fullrange = TRUE, color="red", method="loess", se=FALSE) +
-#    labs(y = "log biomass") +
-#    #ggtitle(df$Model) +
-#    geom_text(data = df, aes(x=value, y=log_bm, label = Lab)) +
-#    #facet_grid2(factor(Model,levels=level1) ~ var + factor(type_bm,levels=level2), scales = "free", independent = "all", axes = "all") +
-#    facet_wrap(factor(Model,levels=level1) ~ factor(type_bm,levels=level2) + var, scales = "free", ncol = 4) +
-#    theme_bw() +
-#    theme_classic() +
-#    theme(text = element_text(size = 25), strip.text = element_text(size=25),
-#          legend.text = element_text(size=20), legend.title = element_text(size=20))
-#    ggsave(file=paste0(store_dir, plot_name)
-#           , width=20, height=21, dpi=300)
-#      while (!is.null(dev.list()))  dev.off()
-# 
-#      prin()
-#
-#
-#
-#ann_text2 <- data.frame(mpg = 14,
-#                        wt = 4,
-#                        lab = paste0('text', 1:9),
-#                        cyl = rep(c(4, 6, 8), 3),
-#                        gear = rep(c(3:5), each = 3))
-#
-#print(ann_text2)
-#ggplot(mtcars, aes(mpg, wt)) + 
-#  geom_point() + 
-#  facet_grid(gear ~ cyl) +
-#  scale_x_continuous(brakes=(15, 20), labels=c("lets","See"))
-#  #coord_cartesian(, 5), clip = "off") +
-#  #geom_text(data = ann_text2, aes(label = lab))
-#
+
 #########################################################################################
 print("##############################    Scatter    ##########################")
 #########################################################################################
@@ -212,7 +155,7 @@ df$SpeciesID <- as.character(df$SpeciesID)
 df$log_bm <- log(df$Biomass)
 
 df <- df %>%
-    pivot_longer(c(-SpeciesID, -Biomass, -type_bm, -Model, -log_bm), names_to= "var", values_to = "value")
+    pivot_longer(c(-SpeciesID, -Biomass, -type_bm, -Model, -log_bm), names_to= "var", values_to = "Value")
 df <- merge(df,labels, by=c("Model","var"))
 print(head(df))
 df <- na.omit(df)
@@ -222,11 +165,7 @@ df_noD <- df[df$Model != "Dryland",]
 #"geom_text() we need to assemble a data frame containing the text of the labels in one column and columns for the variables to be mapped to other aesthetics, as well as the variable(s) used for faceting." 
 xlabs <- df %>%
     group_by(Model,var,type_bm,Lab) %>%
-    summarise(log_bm = max(log_bm) + 1 * diff(range(log_bm)), value = max(value))
-    #summarise(ymin = min(log_bm) - 0.01 * diff(range(log_bm), value = max(value)/2))
-
-print("$$$$$$$$$$$ head(xlabs)")
-print(head(xlabs))
+    summarise(log_bm = 1.36 * max(log_bm), Value = max(Value))
 
 # Calculate a position below the x-axis dynamically
 y_position <- min(df$log_bm) - 0.1 * diff(range(df$log_bm))
@@ -234,13 +173,12 @@ y_position <- min(df$log_bm) - 0.1 * diff(range(df$log_bm))
 plot_name <- "Figure3.png"
 level1 <- c("Grass 1", "Forest 1", "Grass 2", "Grass 3", "Forest 2", "Dryland")
 level2 <- c("Monoculture","Mixture")
-p <- ggplot(data = df, aes(x = value, y = log_bm)) +
+p <- ggplot(data = df, aes(x = Value, y = log_bm)) +
   geom_point() +
-  stat_smooth(data = df_noD, aes(x = value, y = log_bm), 
+  stat_smooth(data = df_noD, aes(x = Value, y = log_bm), 
               fullrange = TRUE, color = "red", method = "loess", se = FALSE) +
  #geom_smooth(method="lm", fill=NA) +
   labs(y = "log biomass") +
-  #facet_nested(factor(Model, levels = level1) ~ var + type_bm, 
   facet_nested(factor(Model, levels = level1) ~ var + factor(type_bm, levels = level2), 
                scales = "free", independent = "all", nest_line = TRUE) +
 #  facet_grid2(factor(Model, levels = level1) ~ var + factor(type_bm, levels = level2), 
@@ -254,9 +192,7 @@ p <- ggplot(data = df, aes(x = value, y = log_bm)) +
   theme(text = element_text(size = 25), strip.background = element_blank(),
         strip.text = element_text(size = 25), strip.clip = "off",
         legend.text = element_text(size = 20), legend.title = element_text(size = 20),
-        panel.spacing = unit(2, "lines"), strip.placement = "outside")
-#ggdraw(p) + draw_label("Lab", x = 0, y = y_position)
-ggsave(file=paste0(store_dir, plot_name)
-       , width=20, height=21, dpi=300)
+        panel.spacing = unit(3, "lines"), strip.placement = "outside")
+ggsave(file=paste0(store_dir, plot_name), width=20, height=22, dpi=300)
 while (!is.null(dev.list()))  dev.off()
 
