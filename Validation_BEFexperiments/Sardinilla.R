@@ -155,22 +155,21 @@ sardinilla2_2012 <- sardinilla %>%
     select(-c(LFP_COMB,SEED__DRY_MIX)) %>%
     filter(Year > 2012)
 
+sardinilla_2012 <- sardinilla %>%
+    filter(Year > 2012)
 
 print("##############################    Scatter    ##########################")
-#sar_1.mono <- sardinilla_1[sardinilla_1$NumSp==1,]
-#sar_1.mix <- sardinilla_1[sardinilla_1$NumSp>1,]
-#fx_plot_trait_Vs_biomass(sar_1.mono, "ScatterSardinilla_1_mono.png")
-#fx_plot_trait_Vs_biomass(sar_1.mix, "ScatterSardinilla_1_mix.png")
+#fx_plot_trait_Vs_biomass(sardinilla_1, "Monoculture", "ScatterSardinilla_1_mono.png")
+#fx_plot_trait_Vs_biomass(sardinilla_1, "Mixture", "ScatterSardinilla_1_mix.png")
 
-sar.mono <- sardinilla[sardinilla$NumSp==1,]
-sar.mix <- sardinilla[sardinilla$NumSp>1,]
-fx_plot_trait_Vs_biomass(sar.mono, "ScatterSardinilla_mono_.png")
-fx_plot_trait_Vs_biomass(sar.mix, "ScatterSardinilla_mix_.png")
+fx_plot_trait_Vs_biomass(sardinilla, "Monoculture", "ScatterSardinilla_mono_.png")
+fx_plot_trait_Vs_biomass(sardinilla, "Mixture", "ScatterSardinilla_mix_.png")
 
-sar2_2012.mono <- sardinilla2_2012[sardinilla2_2012$NumSp==1,]
-sar2_2012.mix <- sardinilla2_2012[sardinilla2_2012$NumSp>1,]
-fx_plot_trait_Vs_biomass(sar2_2012.mono, "ScatterSardinilla2_2012_mono_.png")
-fx_plot_trait_Vs_biomass(sar2_2012.mix, "ScatterSardinilla2_2012_mix_.png")
+fx_plot_trait_Vs_biomass(sardinilla_2012, "Monoculture", "ScatterSardinilla_2012_mono_.png")
+fx_plot_trait_Vs_biomass(sardinilla_2012, "Mixture", "ScatterSardinilla_2012_mix_.png")
+
+fx_plot_trait_Vs_biomass(sardinilla2_2012, "Monoculture", "ScatterSardinilla2_2012_mono_.png")
+fx_plot_trait_Vs_biomass(sardinilla2_2012, "Mixture", "ScatterSardinilla2_2012_mix_.png")
 
 ############################################
 #print("################ cforest ###################")
@@ -199,6 +198,3 @@ write.csv(cforest_mono, paste0(cache_dir,"cforest_sardinilla2_2012_mono_.csv"), 
 
 cforest_mix <- fx_cforest_data_sets(sardinilla2_2012,"Mixture")
 write.csv(cforest_mix, paste0(cache_dir,"cforest_sardinilla2_2012_mix_.csv"), row.names=FALSE)
-### To do
-#Scatter plots with color coded years
-#read reviews - think of a plan

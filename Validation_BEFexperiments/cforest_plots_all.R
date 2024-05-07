@@ -19,19 +19,23 @@ cache_dir           <- paste0(tmp_dir, "cache/")
 
 #jena_mono <-read.csv(paste0(cache_dir,"cforest_Jena_mono.csv"), sep=",")
 #jena_mix <-read.csv(paste0(cache_dir,"cforest_Jena_mix.csv"), sep=",")
-#jena_Fons_mix <-read.csv(paste0(cache_dir,"cforest_Jena_Fons_mix.csv"), sep=",")
+jena_Fons_justmono <-read.csv(paste0(cache_dir,"cforest_Jena_Fons_justmono.csv"), sep=",")
+jena_Fons_mono <-read.csv(paste0(cache_dir,"cforest_Jena_Fons_mono.csv"), sep=",")
+jena_Fons_mix <-read.csv(paste0(cache_dir,"cforest_Jena_Fons_mix.csv"), sep=",")
 jena_Fons_mix_2t <-read.csv(paste0(cache_dir,"cforest_Jena_Fons_mix_2t.csv"), sep=",")
 jena_Fons_mono_2t <-read.csv(paste0(cache_dir,"cforest_Jena_Fons_mono_2t.csv"), sep=",")
 #jena_dom_mono <-read.csv(paste0(cache_dir,"cforest_Jena_Dom_mono.csv"), sep=",")
 #jena_dom_mix <-read.csv(paste0(cache_dir,"cforest_Jena_Dom_mix.csv"), sep=",")
 cedar_mono <-read.csv(paste0(cache_dir,"cforest_cedar_mono.csv"), sep=",")
 cedar_mix <-read.csv(paste0(cache_dir,"cforest_cedar_mix.csv"), sep=",")
+cedar_mono_7y <-read.csv(paste0(cache_dir,"cforest_cedar_mono_7y.csv"), sep=",")
+cedar_mix_7y <-read.csv(paste0(cache_dir,"cforest_cedar_mix_7y.csv"), sep=",")
 cedar_2007mono <-read.csv(paste0(cache_dir,"cforest_cedar_mono_2007.csv"), sep=",")
 cedar_2007mix <-read.csv(paste0(cache_dir,"cforest_cedar_mix_2007.csv"), sep=",")
 cedar_2t_mono_2007 <-read.csv(paste0(cache_dir,"cforest_cedar_2t_mono_2007"), sep=",")
 cedar_2t_mix_2007 <-read.csv(paste0(cache_dir,"cforest_cedar_2t_mix_2007"), sep=",")
-cedar_2t_mono <-read.csv(paste0(cache_dir,"cforest_cedar_2t_mono.csv"), sep=",")
-cedar_2t_mix <-read.csv(paste0(cache_dir,"cforest_cedar_2t_mix.csv"), sep=",")
+#cedar_2t_mono <-read.csv(paste0(cache_dir,"cforest_cedar_2t_mono.csv"), sep=",")
+#cedar_2t_mix <-read.csv(paste0(cache_dir,"cforest_cedar_2t_mix.csv"), sep=",")
 cedar_mono_mean <-read.csv(paste0(cache_dir,"cforest_cedar_mono_mean.csv"), sep=",")
 cedar_mix_mean <-read.csv(paste0(cache_dir,"cforest_cedar_mix_mean.csv"), sep=",")
 cedar_2t_mono_mean <-read.csv(paste0(cache_dir,"cforest_cedar_2t_mono_mean.csv"), sep=",")
@@ -50,7 +54,9 @@ sardinilla2_2012_mono <-read.csv(paste0(cache_dir,"cforest_sardinilla2_2012_mono
 sardinilla2_2012_mix <-read.csv(paste0(cache_dir,"cforest_sardinilla2_2012_mix_.csv"), sep=",")
 
 #jena_mix$mName <- rep("Jena",times=dim(jena_mix)[1])
-#jena_Fons_mix$mName <- rep("Jena_Fons",times=dim(jena_Fons_mix)[1])
+jena_Fons_justmono$mName <- rep("Jena Fons jm",times=dim(jena_Fons_justmono)[1])
+jena_Fons_mono$mName <- rep("Jena_Fons",times=dim(jena_Fons_mono)[1])
+jena_Fons_mix$mName <- rep("Jena_Fons",times=dim(jena_Fons_mix)[1])
 jena_Fons_mix_2t$mName <- rep("Jena_Fons_2t",times=dim(jena_Fons_mix_2t)[1])
 jena_Fons_mono_2t$mName <- rep("Jena_Fons_2t",times=dim(jena_Fons_mono_2t)[1])
 #jena_dom_mix$mName <- rep("Jena_dom",times=dim(jena_dom_mix)[1])
@@ -60,12 +66,14 @@ cedar_2t_mono_mean$mName <- rep("Cedar_2t_mean",times=dim(cedar_2t_mono_mean)[1]
 cedar_2t_mix_mean$mName <- rep("Cedar_2t_mean",times=dim(cedar_2t_mix_mean)[1])
 cedar_2t_mono_2007$mName <- rep("Cedar 2007 2t",times=dim(cedar_2t_mono_2007)[1])
 cedar_2t_mix_2007$mName <- rep("Cedar 2007 2t",times=dim(cedar_2t_mix_2007)[1])
+cedar_mono_7y$mName <- rep("Cedar 7 years",times=dim(cedar_mono_7y)[1])
+cedar_mix_7y$mName <- rep("Cedar 7 years",times=dim(cedar_mono_7y)[1])
 cedar_mono$mName <- rep("Cedar",times=dim(cedar_mono)[1])
 cedar_mix$mName <- rep("Cedar",times=dim(cedar_mono)[1])
 cedar_2007mono$mName <- rep("Cedar 2007",times=dim(cedar_2007mono)[1])
 cedar_2007mix$mName <- rep("Cedar 2007",times=dim(cedar_2007mono)[1])
-cedar_2t_mono$mName <- rep("Cedar_2t",times=dim(cedar_2t_mono)[1])
-cedar_2t_mix$mName <- rep("Cedar_2t",times=dim(cedar_2t_mix)[1])
+#cedar_2t_mono$mName <- rep("Cedar_2t",times=dim(cedar_2t_mono)[1])
+#cedar_2t_mix$mName <- rep("Cedar_2t",times=dim(cedar_2t_mix)[1])
 sardinilla_mono$mName <- rep("Sardinilla",times=dim(sardinilla_mono)[1])
 sardinilla_mix$mName <- rep("Sardinilla",times=dim(sardinilla_mix)[1])
 sardinilla2_mono$mName <- rep("Sardinilla st",times=dim(sardinilla2_mono)[1])
@@ -83,6 +91,11 @@ resvar = "Biomass"
 fx_plot_all <- function(df,resvar,plot_name){	
 # Function to plot the random forest results for all four conditions (for all models)
 	# include function-dominance correlation in model name
+
+Accuracy <- df %>%
+    group_by(mName,condition) %>%
+    summarise(Acc = paste0("(",Acc,")"), varnames = 1, sCPI = 0.9, type = "Size related")
+print(Accuracy)
 
     categ <- c("Resource related" = red, "Size related" = blue, "Mixed" = purple)
 
@@ -107,6 +120,7 @@ fx_plot_all <- function(df,resvar,plot_name){
 	    scale_y_continuous(limits = c(0, 1), breaks = seq(0, 1, by = 0.5)) + 
 	    facet_grid(factor(condition, levels = c("Monoculture","Mixture"))~ mName, scales = "free_x") +
 	    #facet_grid(reorder(condition,modeln) ~ reorder(mNameFDC, -if(resvar=="Biomass"){funcdom}else{funcdom_p}), scales = "free_x") +
+        geom_text(data = Accuracy, aes(label = Acc), size = 8, hjust=-0.5) +  # Adjusted aesthetics
 	    theme_bw() +
 	    theme(text = element_text(size = 24),legend.position = "bottom",
 	    axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1),
@@ -115,21 +129,34 @@ fx_plot_all <- function(df,resvar,plot_name){
 	    plot.title = element_text(hjust = 0.5))
 
 	ggsave(file=paste0(tmp_dir,plot_name,".png")
-	       , width=13, height=9, dpi=300
+	       , width=14, height=10, dpi=300
 	)
 	while (!is.null(dev.list()))  dev.off()
 	return(p)
 }
 
-#plot_name <- "cforest_grid_JenaFons"
-all_d <- rbind(cedar_mono, cedar_mix, cedar_2t_mono, cedar_2t_mix, jena_Fons_mix_2t, jena_Fons_mono_2t, sardinilla2_mono, sardinilla2_mix, sardinilla2_2012_mono, sardinilla2_2012_mix)
-plot_name <- "cforest_grid_experiments_"
+#all_d <- rbind(cedar_mono, cedar_mix, cedar_2t_mono, cedar_2t_mix, jena_Fons_mix_2t, jena_Fons_mono_2t, sardinilla2_mono, sardinilla2_mix, sardinilla2_2012_mono, sardinilla2_2012_mix)
+#plot_name <- "cforest_grid_experiments_"
+#fx_plot_all(all_d,resvar,plot_name)
+plot_name <- "cforest_grid_JenaFons_jm"
+all_d <- rbind(jena_Fons_justmono)
 fx_plot_all(all_d,resvar,plot_name)
 
-cedars <- rbind(cedar_mono, cedar_mix, cedar_2t_mono, cedar_2t_mix, cedar_mono_mean, cedar_mix_mean, cedar_2t_mono_mean, cedar_2t_mix_mean, cedar_2007mono, cedar_2007mix, cedar_2t_mono_2007, cedar_2t_mix_2007)
+plot_name <- "cforest_grid_JenaFons"
+all_d <- rbind(jena_Fons_mix, jena_Fons_mono)
+fx_plot_all(all_d,resvar,plot_name)
+
+plot_name <- "cforest_grid_JenaFons_all"
+all_d <- rbind(jena_Fons_mix_2t, jena_Fons_mono_2t, jena_Fons_mix, jena_Fons_mono)
+fx_plot_all(all_d,resvar,plot_name)
+
+#cedars <- rbind(cedar_mono, cedar_mix, cedar_2t_mono, cedar_2t_mix, cedar_mono_mean, cedar_mix_mean, cedar_2t_mono_mean, cedar_2t_mix_mean, cedar_2007mono, cedar_2007mix, cedar_2t_mono_2007, cedar_2t_mix_2007)
+#cedars <- rbind(cedar_mono, cedar_mix, cedar_2t_mono, cedar_2t_mix, cedar_mono_mean, cedar_mix_mean, cedar_2t_mono_mean, cedar_2t_mix_mean, cedar_2007mono, cedar_2007mix, cedar_2t_mono_2007, cedar_2t_mix_2007)
+cedars <- rbind(cedar_mono, cedar_mix, cedar_mono_7y, cedar_mix_7y, cedar_2t_mono_mean, cedar_2t_mix_mean, cedar_2007mono, cedar_2007mix, cedar_2t_mono_2007, cedar_2t_mix_2007)
 plot_name <- "cforest_cedars"
 fx_plot_all(cedars,resvar,plot_name)
 
-sard <- rbind(cedar_2t_mono, cedar_2t_mix, jena_Fons_mix_2t, jena_Fons_mono_2t, sardinilla_mono, sardinilla_mix, sardinilla2_mono, sardinilla2_mix)
+#sard <- rbind(cedar_2t_mono, cedar_2t_mix, jena_Fons_mix_2t, jena_Fons_mono_2t, sardinilla_mono, sardinilla_mix, sardinilla2_mono, sardinilla2_mix)
+sard <- rbind(sardinilla_mono, sardinilla_mix, sardinilla2_mono, sardinilla2_mix, sardinilla2_2012_mono, sardinilla2_2012_mix)
 plot_name <- "cforest_sard"
 fx_plot_all(sard,resvar,plot_name)
